@@ -1,4 +1,4 @@
 MESSAGE(STATUS "cmake configure src/app/...")
 
-# SUBDIRS( xxx  )
+SUBDIRS( pg_svc )
 
