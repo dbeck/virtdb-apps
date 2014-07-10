@@ -20,6 +20,10 @@
 *.out
 *.app
 
+# Protocol buffer
+*.pb.cc
+*.pb.h
+
 # cmake / make
 CMakeCache.txt
 CMakeFiles
