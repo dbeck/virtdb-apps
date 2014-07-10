@@ -1,0 +1,6 @@
+package interfaces.pb;
+
+message ConnConfig {
+  optional uint32 TestMe = 1;
+}
+
