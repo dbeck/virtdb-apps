@@ -50,19 +50,19 @@ FIND_LIBRARY(ICU_DATA_LIB
 IF(ICU_I18N_LIB)
   MESSAGE(STATUS "  OK : icu-i18n lib: ${ICU_I18N_LIB}")
 ELSE(ICU_I18N_LIB)
-  MESSAGE(ERROR  "  KO : icu-i18n lib not found")
+  MESSAGE(ERROR  "! KO : icu-i18n lib not found")
 ENDIF(ICU_I18N_LIB)
 
 IF(ICU_UC_LIB)
   MESSAGE(STATUS "  OK : icu-uc lib: ${ICU_UC_LIB}")
 ELSE(ICU_UC_LIB)
-  MESSAGE(ERROR  "  KO : icu-uc lib not found")
+  MESSAGE(ERROR  "! KO : icu-uc lib not found")
 ENDIF(ICU_UC_LIB)
 
 IF(ICU_DATA_LIB)
   MESSAGE(STATUS "  OK : icu-data lib: ${ICU_DATA_LIB}")
 ELSE(ICU_DATA_LIB)
-  MESSAGE(ERROR "   KO : icu-data lib not found")
+  MESSAGE(ERROR "! KO : icu-data lib not found")
 ENDIF(ICU_DATA_LIB)
 
 SET(ICU_LIBRARIES ${ICU_I18N_LIB} ${ICU_UC_LIB} ${ICU_DATA_LIB})
