@@ -1,6 +1,55 @@
-package interfaces.pb;
+package interface.pb;
+import "common.proto";
 
-message MetaData {
-  optional uint32 TestMe = 1;
+message Comment {
+  required string Text      = 1;
+  optional string Language  = 2;
 }
+
+message MetaDataRequest {
+  // both: regexp 
+  required string Name    = 1;  
+  optional string Schema  = 2; 
+}
+
+message MetaDataReply {
+  message TableMeta {
+    required string Name    = 1;
+    optional string Schema  = 2;
+    repeated Comment Comments     = 3;
+    repeated KeyValue Properties  = 4;
+    message Field {
+      required string Name = 1;
+      message FieldType {
+        enum Kinds {
+          STRING    = 2;
+          INT32     = 3;
+          INT64     = 4;
+          UINT32    = 5;
+          UINT64    = 6;
+          DOUBLE    = 7;
+          FLOAT     = 8;
+          BOOL      = 9;
+          BYTES     = 10;
+          DATE      = 11;
+          TIME      = 12;
+          DATETIME  = 13;
+          NUMERIC   = 14;
+          INET4     = 15;
+          INET6     = 16;
+          MAC       = 17;
+          GEODATA   = 18;
+        }
+        required Kinds  Kind    = 1;
+        optional uint32 Length  = 2;
+        optional uint32 Scale   = 3;
+        optional string Format  = 4;
+      }
+      required FieldType  Type        = 2;
+      repeated Comment    Comments    = 3;
+      repeated KeyValue   Properties  = 4;
+    }
+  }
+}
+
 
