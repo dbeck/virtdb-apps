@@ -1,4 +1,5 @@
 package interfaces.pb;
+import "common.proto";
 
 message DbConfig {
   optional uint32 TestMe = 1;
