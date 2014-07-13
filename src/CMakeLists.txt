@@ -1,4 +1,4 @@
 MESSAGE(STATUS "cmake configure src/...")
 
-SUBDIRS( common interface services app )
+SUBDIRS( common interface service app )
 
