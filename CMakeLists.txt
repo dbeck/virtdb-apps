@@ -47,6 +47,6 @@ SET(DV_PROJECT_LINK_DIRS
 
 LINK_DIRECTORIES(${DV_PROJECT_LINK_DIRS})
 
-SUBDIRS( src test )
+SUBDIRS( 3rd-party src test )
 
 # INCLUDE(PrintVars)
