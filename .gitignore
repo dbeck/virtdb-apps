@@ -20,6 +20,7 @@
 *.out
 *.app
 bin/*_test
+lib/*
 
 # Protocol buffer
 *.pb.cc

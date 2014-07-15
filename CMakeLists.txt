@@ -24,6 +24,8 @@ INCLUDE(DetectGnuTLS)
 INCLUDE(UseBoost)
 INCLUDE(SetupPostgresLinkerFlags)
 INCLUDE(SetupPostgresCompilerFlags)
+INCLUDE(ExternalProject)
+INCLUDE(NodeExternal)
 
 SET(DV_PROJECT_INCLUDES
   ${CMAKE_CURRENT_SOURCE_DIR}/src
