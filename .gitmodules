@@ -1,3 +1,0 @@
-[submodule "3rd-party/nodejs"]
-	path = 3rd-party/nodejs
-	url = https://github.com/starschema/node.git
