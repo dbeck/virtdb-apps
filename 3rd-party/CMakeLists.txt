@@ -7,14 +7,26 @@ MESSAGE(STATUS "Integrating external Node.js sources")
 SET(NODE_MODULE "3rd-party/nodejs")
 SET(NODE_GIT "https://github.com/starschema/node.git")
 
+# update nodejs submodule
+ADD_CUSTOM_COMMAND(
+  OUTPUT
+    ${CMAKE_CURRENT_SOURCE_DIR}/nodejs/configure 
+  PRE_BUILD
+  COMMAND
+    git
+  ARGS
+    submodule update --init
+  MAIN_DEPENDENCY
+    ${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists.txt 
+  WORKING_DIRECTORY
+    ${CMAKE_CURRENT_SOURCE_DIR}/../
+  )
+
 ExternalProject_Add(
   nodejs
   TMP_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../wipe-me/tmp/nodejs
   STAMP_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../wipe-me/stamp/nodejs
   DOWNLOAD_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../wipe-me/download/nodejs
-  GIT_REPOSITORY ${NODE_GIT}
-  GIT_SUBMODULES ${NODE_MODULE}
-  # GIT_TAG master
   SOURCE_DIR
     ${CMAKE_CURRENT_SOURCE_DIR}/nodejs
   CONFIGURE_COMMAND 
@@ -24,7 +36,5 @@ ExternalProject_Add(
     ${CMAKE_CURRENT_SOURCE_DIR}/nodejs
   BUILD_COMMAND ${CMAKE_MAKE}
   BUILD_IN_SOURCE 1
-  #LOG_DOWNLOAD 1
-  #LOG_UPDATE 1
 )
 
