@@ -1,27 +1,11 @@
 MESSAGE(STATUS "cmake configure 3rd-party/...")
 
-SUBDIRS( gtest-1.7.0 )
-
 MESSAGE(STATUS "Integrating external Node.js sources")
 
-SET(NODE_MODULE "3rd-party/nodejs")
-SET(NODE_GIT "https://github.com/starschema/node.git")
+# step #0 : creating a temp file so cmake won't bark at config step
+FILE(WRITE ${CMAKE_CURRENT_SOURCE_DIR}/nodejs/fake-file-for-cmake "fooling you my friend")
 
-# update nodejs submodule
-ADD_CUSTOM_COMMAND(
-  OUTPUT
-    ${CMAKE_CURRENT_SOURCE_DIR}/nodejs/configure 
-  PRE_BUILD
-  COMMAND
-    git
-  ARGS
-    submodule update --init
-  MAIN_DEPENDENCY
-    ${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists.txt 
-  WORKING_DIRECTORY
-    ${CMAKE_CURRENT_SOURCE_DIR}/../
-  )
-
+# step #3 : ./configure && make
 ExternalProject_Add(
   nodejs
   TMP_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../wipe-me/tmp/nodejs
@@ -38,3 +22,25 @@ ExternalProject_Add(
   BUILD_IN_SOURCE 1
 )
 
+# step #1 : removing the temp file so git won't bark either
+ExternalProject_Add_Step(
+  nodejs nodejs-remove-fake-file 
+  COMMAND rm -f ${CMAKE_CURRENT_SOURCE_DIR}/nodejs/fake-file-for-cmake
+  COMMENT "removing cmake's fake file"
+  # DEPENDERS nodejs-submodule 
+  # DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/nodejs/fake-file-for-cmake
+  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+  )
+
+# step #2 : git submodule upate
+ExternalProject_Add_Step(
+  nodejs nodejs-submodule 
+  COMMAND git submodule update --init
+  COMMENT "updating git submodules"
+  DEPENDEES nodejs-remove-fake-file
+  # DEPENDERS nodejs  
+  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../.gitmodules
+  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../
+  )
+
+SUBDIRS( gtest-1.7.0 )
