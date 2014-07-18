@@ -1,7 +1,28 @@
-package interfaces.pb;
+package interface.pb;
 import "common.proto";
+import "meta_data.proto";
+
+message ServerConfig {
+  required string     Type        = 1;
+  required string     Name        = 2;
+  repeated KeyValue   Properties  = 3;
+  repeated TableMeta  Tables      = 4;
+  repeated string     Users       = 5;
+}
 
 message DbConfig {
-  optional uint32 TestMe = 1;
+  repeated ServerConfig Servers = 1;
 }
+
+message DbConfigReply {
+  optional int32 Dummy = 1; // ERROR Codes, ERR str, exception, whatever ??
+}
+
+message DbConfigQuery {
+  required string  Name        = 1; // regexp
+  optional bool    SkipTables  = 2; // don't pass table info. implies SkipFields
+  optional bool    SkipFields  = 3; // don't pass fdw fields
+}
+// expect DbConfig reply ...
+
 

@@ -1,4 +1,4 @@
-package interfaces.pb;
+package interface.pb;
 import "common.proto";
 
 message ConnConfig {

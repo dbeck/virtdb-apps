@@ -1,15 +1,16 @@
 package interface.pb;
 
 message KeyValue {
-  required string Key          = 1;
-  optional string StringValue  = 2;
-  optional int32  Int32Value   = 3;
-  optional int64  Int64Value   = 4;
-  optional uint32 UInt32Value  = 5;
-  optional uint64 UInt64Value  = 6;
-  optional double DoubleValue  = 7;
-  optional float  FloatValue   = 8;
-  optional bool   BoolValue    = 9;
-  optional bytes  BytesValue   = 10;
+  required string    Key           = 1;
+  repeated KeyValue  Children      = 2;
+  optional string    StringValue   = 3;
+  optional int32     Int32Value    = 4;
+  optional int64     Int64Value    = 5;
+  optional uint32    UInt32Value   = 6;
+  optional uint64    UInt64Value   = 7;
+  optional double    DoubleValue   = 8;
+  optional float     FloatValue    = 9;
+  optional bool      BoolValue     = 10;
+  optional bytes     BytesValue    = 11;
 }
 
