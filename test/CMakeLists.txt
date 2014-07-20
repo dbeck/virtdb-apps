@@ -1,6 +1,10 @@
 MESSAGE(STATUS "cmake configure test/...")
 
-LINK_LIBRARIES( interface_meta_data ${Boost_LIBRARIES} ${PB_LIBRARY} )
+LINK_LIBRARIES( ${Boost_LIBRARIES} ${PB_LIBRARY} )
+
+ADD_EXECUTABLE( KeyValue_gtest KeyValue_gtest.cc )
+TARGET_LINK_LIBRARIES( KeyValue_gtest interface_common gtest )
+ADD_TEST( KeyValue_gtest ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/KeyValue_gtest )
 
 # test if libs and includes are properly setup, so we can link applications w/ ZMQ
 # ADD_EXECUTABLE( zmq_link_test zmq_link_test.cc )

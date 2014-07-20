@@ -1,4 +1,4 @@
-package interface.pb;
+package virtdb.interface.pb;
 import "common.proto";
 
 message ConnConfig {

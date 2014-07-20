@@ -3,6 +3,7 @@
 *.lo
 *.o
 *.obj
+*.build
 
 # Compiled Dynamic libraries
 *.so
@@ -20,6 +21,7 @@
 *.out
 *.app
 bin/*_test
+bin/*_gtest
 lib/*
 
 # Protocol buffer
@@ -32,6 +34,10 @@ CMakeFiles
 CTestTestfile.cmake
 Makefile
 cmake_install.cmake
+CMakeScripts
 
 # Temp files
 wipe-me
+
+# Xcode
+*.xcodeproj

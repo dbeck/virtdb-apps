@@ -1,8 +1,8 @@
-package interface.pb;
+package virtdb.interface.pb;
 
 message KeyValue {
   required string    Key           = 1;
-  repeated KeyValue  Children      = 2;
+  // repeated KeyValue  Children      = 2;
   optional string    StringValue   = 3;
   optional int32     Int32Value    = 4;
   optional int64     Int64Value    = 5;
