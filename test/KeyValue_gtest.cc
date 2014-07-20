@@ -14,8 +14,10 @@ protected:
   KeyValuePtr kvptr_;
 };
 
-TEST_F(KeyValueTest, GetSetSimple) {
+TEST_F(KeyValueTest, GetSetString) {
   EXPECT_TRUE( this->kvptr_.get() != nullptr );
+  this->kvptr_->set_stringvalue("Hello World");
+  EXPECT_EQ( this->kvptr_->stringvalue(), "Hello World" );
 }
 
 int main(int argc, char **argv) 

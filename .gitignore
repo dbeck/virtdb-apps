@@ -35,6 +35,7 @@ CTestTestfile.cmake
 Makefile
 cmake_install.cmake
 CMakeScripts
+Testing
 
 # Temp files
 wipe-me
