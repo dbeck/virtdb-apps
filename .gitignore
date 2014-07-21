@@ -46,6 +46,7 @@ wipe-me
 # generated / 3rd party
 include/node
 bin/node
+bin/node-gyp
 bin/npm
 share/man
 share/systemtap
