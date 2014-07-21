@@ -43,4 +43,12 @@ ExternalProject_Add_Step(
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../
   )
 
+# step #4 : install node-gyp
+ExternalProject_Add_Step(
+  nodejs nodejs-gyp
+  COMMAND ./npm install -g node-gyp
+  COMMENT "install node-gyp"
+  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../bin/
+  )
+
 SUBDIRS( gtest-1.7.0 )
