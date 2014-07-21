@@ -1,0 +1,5 @@
+{
+    "name": "dummy_svc",
+    "version": "1.0.0",
+    "main": "./build/Release/dummy_svc"
+}
