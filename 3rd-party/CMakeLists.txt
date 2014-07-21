@@ -15,7 +15,7 @@ ExternalProject_Add(
     ${CMAKE_CURRENT_SOURCE_DIR}/nodejs
   CONFIGURE_COMMAND 
     ${CMAKE_CURRENT_SOURCE_DIR}/nodejs/configure
-    --prefix=${CMAKE_CURRENT_SOURCE_DIR}/../lib/nodejs/
+    --prefix=${CMAKE_CURRENT_SOURCE_DIR}/../
   PREFIX
     ${CMAKE_CURRENT_SOURCE_DIR}/nodejs
   BUILD_COMMAND ${CMAKE_MAKE}
