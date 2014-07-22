@@ -54,6 +54,7 @@ share/systemtap
 # node
 build
 npm-debug.log
+node_modules
 
 # configure, libtool and company
 build-aux
