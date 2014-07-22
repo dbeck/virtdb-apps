@@ -11,10 +11,11 @@ echo "-- building node.js"
 echo
 cd 3rd-party/nodejs
 ./configure --prefix=$BUILD_ROOT >/dev/null 2>&1
-make all install
+make -j8 all
+make install
 cd $BUILD_ROOT
 
 echo "-- bootstraping node-gyp"
 echo 
-npm install node-gyp
+npm install -g node-gyp
 
