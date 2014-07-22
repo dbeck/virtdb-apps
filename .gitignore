@@ -50,3 +50,29 @@ bin/node-gyp
 bin/npm
 share/man
 share/systemtap
+install/include/node
+install/bin/node
+install/bin/node-gyp
+install/bin/npm
+install/share/man
+install/share/systemtap
+
+# node
+build
+npm-debug.log
+node_modules
+
+# configure, libtool and company
+build-aux
+.deps
+.dirstamp
+config.log
+config.status
+3rd-party/gtest-1.7.0/lib
+3rd-party/gtest-1.7.0/libtool
+3rd-party/gtest-1.7.0/scripts/gtest-config
+
+# gyp generated
+*.target.mk
+*.Makefile
+out/
