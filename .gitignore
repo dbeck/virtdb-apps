@@ -55,5 +55,3 @@ share/systemtap
 build
 npm-debug.log
 
-# external modules
-3rd-party/nodejs
