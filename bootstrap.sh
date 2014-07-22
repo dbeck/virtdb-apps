@@ -19,3 +19,15 @@ echo "-- bootstraping node-gyp"
 echo 
 npm install -g node-gyp
 
+echo "-- bootstraping gyp"
+echo
+export PATH=$BUILD_ROOT/install/lib/node_modules/node-gyp/gyp:$PATH
+export GYP=$BUILD_ROOT/install/lib/node_modules/node-gyp/gyp/gyp
+if [ -e $GYP ]
+then
+  echo $GYP
+else
+  echo NO SUCH FILE: $GYP
+  exit 100
+fi
+

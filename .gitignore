@@ -50,6 +50,12 @@ bin/node-gyp
 bin/npm
 share/man
 share/systemtap
+install/include/node
+install/bin/node
+install/bin/node-gyp
+install/bin/npm
+install/share/man
+install/share/systemtap
 
 # node
 build
