@@ -72,3 +72,7 @@ config.status
 3rd-party/gtest-1.7.0/libtool
 3rd-party/gtest-1.7.0/scripts/gtest-config
 
+# gyp generated
+*.target.mk
+*.Makefile
+out/

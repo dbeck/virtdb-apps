@@ -31,3 +31,5 @@ else
   exit 100
 fi
 
+gyp --depth=. main.gyp
+
