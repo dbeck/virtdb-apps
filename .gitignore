@@ -55,3 +55,13 @@ share/systemtap
 build
 npm-debug.log
 
+# configure, libtool and company
+build-aux
+.deps
+.dirstamp
+config.log
+config.status
+3rd-party/gtest-1.7.0/lib
+3rd-party/gtest-1.7.0/libtool
+3rd-party/gtest-1.7.0/scripts/gtest-config
+
