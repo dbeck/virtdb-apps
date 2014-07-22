@@ -52,4 +52,8 @@ share/man
 share/systemtap
 
 # node
+build
 npm-debug.log
+
+# external modules
+3rd-party/nodejs
