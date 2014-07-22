@@ -1,5 +1,0 @@
-GET_CMAKE_PROPERTY(_variableNames VARIABLES)
-MESSAGE(STATUS "CMAKE Variables:")
-FOREACH(_variableName ${_variableNames})
-  MESSAGE(STATUS " -- ${_variableName}=${${_variableName}}")
-ENDFOREACH()
