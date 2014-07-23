@@ -56,6 +56,7 @@ install/bin/node-gyp
 install/bin/npm
 install/share/man
 install/share/systemtap
+install/lib
 
 # node
 build
