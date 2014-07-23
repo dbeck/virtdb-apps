@@ -5,7 +5,7 @@ export PATH=$BUILD_ROOT/install/bin:$PATH
 
 echo "-- gathering external dependencies"
 echo 
-git submodule update --init
+git submodule update --init --remote
 
 echo "-- building node.js"
 echo
