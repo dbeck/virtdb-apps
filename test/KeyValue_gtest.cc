@@ -1,6 +1,5 @@
-
 #include <gtest/gtest.h>
-#include <interface/common/common.pb.h>
+#include <src/common.pb.h>
 #include <memory>
 
 using namespace virtdb::interface::pb;
