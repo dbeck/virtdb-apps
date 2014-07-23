@@ -14,17 +14,7 @@
       '/usr/local/include',
       '/usr/include',
     ],
-    'link_settings': {
-      'ldflags': [
-        '-fPIC',
-        '-L/usr/local/lib',
-        '-L/usr/lib',
-        '-L/opt/lib',
-        '-lprotobuf',
-      ],
-    },
     'cflags': [
-      '-fPIC',
       '-std=c++11',
     ],
     'defines': [ 
@@ -44,6 +34,15 @@
       'type': 'executable',
       'dependencies': [ 'common_pb_lib', 'meta_data_pb_lib', 'db_config_pb_lib' ],
       'sources': [ 'src/testme.cc', ],
+      'link_settings': {
+        'ldflags': [
+          '-fPIC',
+          '-L/usr/local/lib',
+          '-L/usr/lib',
+          '-L/opt/lib',
+        ],
+        'libraries': [ '-lprotobuf' ],
+      },
     },
     {
       'target_name': 'common_pb_lib',
