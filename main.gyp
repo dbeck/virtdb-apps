@@ -48,12 +48,12 @@
       'target_name': 'common_pb_lib',
       'type': 'static_library',
       'sources': [ 'src/common.pb.cc', ],
-      'variables': { 'common_pb_lib_proto': 'src/common.proto', },
+      'variables': { 'common_pb_lib_proto': 'src/proto/common.proto', },
       'actions': [ {
           'action_name': 'protoc_gen_common',
           'inputs': [ '<(common_pb_lib_proto)', ],
           'outputs': [ 'src/common.pb.cc', 'src/common.pb.h', ],
-          'action': [ '<(protoc)', '--cpp_out=src/.', '-Isrc/.', '<(common_pb_lib_proto)', ],
+          'action': [ '<(protoc)', '--cpp_out=src/.', '-Isrc/proto/.', '<(common_pb_lib_proto)', ],
         }
       ],
     },
@@ -63,14 +63,14 @@
       'dependencies': [ 'common_pb_lib' ],
       'sources': [ 'src/meta_data.pb.cc', ],
       'variables': {
-        'meta_data_pb_lib_proto': 'src/meta_data.proto',
+        'meta_data_pb_lib_proto': 'src/proto/meta_data.proto',
         'common_pb_lib_h':        'src/common.pb.h',
        },
       'actions': [ {
           'action_name': 'protoc_gen_meta_data',
           'inputs': [ '<(meta_data_pb_lib_proto)', '<(common_pb_lib_h)', ],
           'outputs': [ 'src/meta_data.pb.cc', 'src/meta_data.pb.h', ],
-          'action': [ '<(protoc)', '--cpp_out=src/.', '-Isrc/.', '<(meta_data_pb_lib_proto)', ],
+          'action': [ '<(protoc)', '--cpp_out=src/.', '-Isrc/proto/.', '<(meta_data_pb_lib_proto)', ],
         }
       ],
     },
@@ -80,7 +80,7 @@
       'dependencies': [ 'meta_data_pb_lib','common_pb_lib', ],
       'sources': [ 'src/db_config.pb.cc', ],
       'variables': { 
-         'db_config_pb_lib_proto': 'src/db_config.proto',
+         'db_config_pb_lib_proto': 'src/proto/db_config.proto',
          'meta_data_pb_lib_h':     'src/meta_data.pb.h',
          'common_pb_lib_h':        'src/common.pb.h',
        },
@@ -88,7 +88,7 @@
           'action_name': 'protoc_gen_db_config',
           'inputs': [ '<(db_config_pb_lib_proto)', '<(meta_data_pb_lib_h)', '<(common_pb_lib_h)' ],
           'outputs': [ 'src/db_config.pb.cc', 'src/db_config.pb.h', ],
-          'action': [ '<(protoc)', '--cpp_out=src/.', '-Isrc/.', '<(db_config_pb_lib_proto)', ],
+          'action': [ '<(protoc)', '--cpp_out=src/.', '-Isrc/proto/.', '<(db_config_pb_lib_proto)', ],
         }
       ],
     },

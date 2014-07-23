@@ -1,7 +1,0 @@
-package virtdb.interface.pb;
-import "common.proto";
-
-message ConnConfig {
-  optional uint32 TestMe = 1;
-}
-
