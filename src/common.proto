@@ -1,16 +1,35 @@
 package virtdb.interface.pb;
 
 message KeyValue {
-  required string    Key           = 1;
-  // repeated KeyValue  Children      = 2;
-  optional string    StringValue   = 3;
-  optional int32     Int32Value    = 4;
-  optional int64     Int64Value    = 5;
-  optional uint32    UInt32Value   = 6;
-  optional uint64    UInt64Value   = 7;
-  optional double    DoubleValue   = 8;
-  optional float     FloatValue    = 9;
-  optional bool      BoolValue     = 10;
-  optional bytes     BytesValue    = 11;
+    required string    Key           = 1;
+    repeated KeyValue  Children      = 2;
+    optional string    StringValue   = 3;
+    optional int32     Int32Value    = 4;
+    optional int64     Int64Value    = 5;
+    optional uint32    UInt32Value   = 6;
+    optional uint64    UInt64Value   = 7;
+    optional double    DoubleValue   = 8;
+    optional float     FloatValue    = 9;
+    optional bool      BoolValue     = 10;
+    optional bytes     BytesValue    = 11;
 }
 
+enum Kinds {
+    STRING    = 2;
+    INT32     = 3;
+    INT64     = 4;
+    UINT32    = 5;
+    UINT64    = 6;
+    DOUBLE    = 7;
+    FLOAT     = 8;
+    BOOL      = 9;
+    BYTES     = 10;
+    DATE      = 11;
+    TIME      = 12;
+    DATETIME  = 13;
+    NUMERIC   = 14;
+    INET4     = 15;
+    INET6     = 16;
+    MAC       = 17;
+    GEODATA   = 18;
+}
