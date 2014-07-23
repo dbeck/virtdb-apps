@@ -2,11 +2,34 @@
 package virtdb.interface.pb;
 
 message Data {
-  required int32 Dummy = 1;
+    // query id
+    required string ColumnName = 1;
+    // required FieldType DataType = 2;
+    // repeated Value Values = 3;
+}
+
+message SimpleExpression {
+    required string Variable = 1;
+    required string Value    = 2;
+}
+
+message CompositeExpression {
+    required Expression Left     = 1;
+    required Expression Right    = 2;
 }
 
 message Expression {
-    required string Variable = 1;
-    required string Operand = 2;
-    required string Value = 3;
+    required string Operand                 = 1;
+    optional CompositeExpression composite  = 2;
+    optional SimpleExpression    simple     = 3;
+}
+
+message Query {
+    // id
+    // columns
+    // tablename
+    // limit
+    // source system user access info
+    repeated Expression expression = 1;
+
 }
