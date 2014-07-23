@@ -48,7 +48,7 @@
       'target_name': 'common_pb_lib',
       'type': 'static_library',
       'sources': [ 'src/common.pb.cc', ],
-      'variables': { 'common_pb_lib_proto': 'src/common.proto', },
+      'variables': { 'common_pb_lib_proto': 'src/proto/common.proto', },
       'actions': [ {
           'action_name': 'protoc_gen_common',
           'inputs': [ '<(common_pb_lib_proto)', ],
@@ -63,7 +63,7 @@
       'dependencies': [ 'common_pb_lib' ],
       'sources': [ 'src/meta_data.pb.cc', ],
       'variables': {
-        'meta_data_pb_lib_proto': 'src/meta_data.proto',
+        'meta_data_pb_lib_proto': 'src/proto/meta_data.proto',
         'common_pb_lib_h':        'src/common.pb.h',
        },
       'actions': [ {
@@ -80,7 +80,7 @@
       'dependencies': [ 'meta_data_pb_lib','common_pb_lib', ],
       'sources': [ 'src/db_config.pb.cc', ],
       'variables': { 
-         'db_config_pb_lib_proto': 'src/db_config.proto',
+         'db_config_pb_lib_proto': 'src/proto/db_config.proto',
          'meta_data_pb_lib_h':     'src/meta_data.pb.h',
          'common_pb_lib_h':        'src/common.pb.h',
        },
