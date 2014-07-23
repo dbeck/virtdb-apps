@@ -1,7 +1,12 @@
+
 package virtdb.interface.pb;
-import "common.proto";
 
 message Data {
-  optional uint32 TestMe = 1;
+  required int32 Dummy = 1;
 }
 
+message Expression {
+    required string Variable = 1;
+    required string Operand = 2;
+    required string Value = 3;
+}
