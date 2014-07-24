@@ -10,9 +10,11 @@
     },
     'include_dirs': [ 
       'src/',
+      'src/cppzmq/',
       'install/include/node/',
-      '/usr/local/include',
-      '/usr/include',
+      '/usr/local/include/',
+      '/usr/include/',
+      '<!@(pkg-config --variable=includedir protobuf libzmq)',
     ],
     'cflags': [
       '-std=c++11',
@@ -27,22 +29,35 @@
       ['_type=="static_library"', {'cflags': ['-fPIC']}],
       ['_type=="executable"',     {'cflags': ['-fPIC']}],
     ],
+    'conditions': [
+      ['OS=="mac"', { 
+        'cflags': [ '<!@(pkg-config --cflags protobuf libzmq)', ], 
+        'xcode_settings': { 
+          'GCC_ENABLE_CPP_EXCEPTIONS': 'YES',
+          'OTHER_LDFLAGS': [ '<!@(pkg-config --libs-only-L --libs-only-l protobuf libzmq)' ],
+        },
+      },],
+      ['OS=="linux"', { 
+        'cflags': [ '<!@(pkg-config --cflags protobuf libzmq)', '-Werror' ], 
+        'link_settings': {
+          'ldflags': ['-Wl,--no-as-needed',],
+          'libraries': [ '<!@(pkg-config --libs-only-L --libs-only-l protobuf libzmq)', ], 
+        },
+      },],
+    ],
   },
   'targets' : [
     {
       'target_name': 'testme',
       'type': 'executable',
-      'dependencies': [ 'common_pb_lib', 'meta_data_pb_lib', 'db_config_pb_lib' ],
+      'dependencies': [ 'common_pb_lib', 'meta_data_pb_lib', 'db_config_pb_lib', 'data_pb_lib' ],
       'sources': [ 'src/testme.cc', ],
-      'link_settings': {
-        'ldflags': [
-          '-fPIC',
-          '-L/usr/local/lib',
-          '-L/usr/lib',
-          '-L/opt/lib',
-        ],
-        'libraries': [ '-lprotobuf' ],
-      },
+    },
+    {
+      'target_name': 'dummy_metadata_service',
+      'type': 'executable',
+      'dependencies': [ 'common_pb_lib', 'meta_data_pb_lib', 'db_config_pb_lib', 'data_pb_lib' ],
+      'sources': [ 'src/dummy_metadata_service.cc', ],
     },
     {
       'target_name': 'common_pb_lib',
@@ -89,6 +104,24 @@
           'inputs': [ '<(db_config_pb_lib_proto)', '<(meta_data_pb_lib_h)', '<(common_pb_lib_h)' ],
           'outputs': [ 'src/db_config.pb.cc', 'src/db_config.pb.h', ],
           'action': [ '<(protoc)', '--cpp_out=src/.', '-Isrc/proto/.', '<(db_config_pb_lib_proto)', ],
+        }
+      ],
+    },
+    {
+      'target_name': 'data_pb_lib',
+      'type': 'static_library',
+      'dependencies': [ 'meta_data_pb_lib','common_pb_lib', ],
+      'sources': [ 'src/data.pb.cc', ],
+      'variables': { 
+         'data_pb_lib_proto':      'src/proto/data.proto',
+         'meta_data_pb_lib_h':     'src/meta_data.pb.h',
+         'common_pb_lib_h':        'src/common.pb.h',
+       },
+      'actions': [ {
+          'action_name': 'protoc_gen_data',
+          'inputs': [ '<(data_pb_lib_proto)', '<(meta_data_pb_lib_h)', '<(common_pb_lib_h)' ],
+          'outputs': [ 'src/data.pb.cc', 'src/data.pb.h', ],
+          'action': [ '<(protoc)', '--cpp_out=src/.', '-Isrc/proto/.', '<(data_pb_lib_proto)', ],
         }
       ],
     },
