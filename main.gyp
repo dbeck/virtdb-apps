@@ -2,22 +2,6 @@
   'variables': {
     'protoc': '<!(which protoc)',
   },
-  #'conditions': [
-  #  ['OS=="mac"', { 
-  #    'cflags': [ '<!@(pkg-config --cflags protobuf libzmq)', ], 
-  #    'xcode_settings': { 
-  #      'GCC_ENABLE_CPP_EXCEPTIONS': 'YES',
-  #      'OTHER_LDFLAGS': [ '<!@(pkg-config --libs-only-L --libs-only-l protobuf libzmq)' ],
-  #    },
-  #  },],
-    #['OS=="linux"', { 
-    #  'cflags': [ '<!@(pkg-config --cflags protobuf libzmq)', '-Werror' ], 
-    #  'link_settings': {
-    #    'ldflags': ['-Wl,--no-as-needed',],
-    #    'libraries': [ '<!@(pkg-config --libs-only-L --libs-only-l protobuf libzmq)', ], 
-    #  },
-    #},],
-  # ],
   'target_defaults': {
     'default_configuration': 'Debug',
     'configurations': {
@@ -26,9 +10,10 @@
     },
     'include_dirs': [ 
       'src/',
+      'src/cppzmq/',
       'install/include/node/',
-      '/usr/local/include',
-      '/usr/include',
+      '/usr/local/include/',
+      '/usr/include/',
       '<!@(pkg-config --variable=includedir protobuf libzmq)',
     ],
     'cflags': [
