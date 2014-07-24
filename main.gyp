@@ -55,7 +55,7 @@
     'data_pb_desc':         'src/data.pb.desc',
     'common_pb_srcs':           [ 'src/common.pb.h', 'src/common.pb.cc', ],
     'meta_data_pb_srcs':        [ 'src/meta_data.pb.h', 'src/meta_data.pb.cc', ],
-    'db_config_pb_srcs':        [ 'src/db_config_data.pb.h', 'src/db_config_data.pb.cc', ],
+    'db_config_pb_srcs':        [ 'src/db_config.pb.h', 'src/db_config.pb.cc', ],
     'data_pb_srcs':             [ 'src/data.pb.h', 'src/data.pb.cc', ],
   },
   'targets' : [
