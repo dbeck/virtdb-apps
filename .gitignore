@@ -27,6 +27,7 @@ lib/*
 # Protocol buffer
 *.pb.cc
 *.pb.h
+*.pb.desc
 
 # cmake / make
 CMakeCache.txt
