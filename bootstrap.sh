@@ -15,9 +15,10 @@ make -j8 all
 make install
 cd $BUILD_ROOT
 
-echo "-- bootstraping node-gyp"
+echo "-- bootstraping node-gyp, gulp"
 echo 
 npm install -g node-gyp
+npm install -g gulp
 
 echo "-- bootstraping gyp"
 echo
