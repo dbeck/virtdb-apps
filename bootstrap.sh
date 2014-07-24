@@ -4,7 +4,7 @@ export BUILD_ROOT=$PWD
 export PATH=$BUILD_ROOT/install/bin:$PATH
 
 echo "-- gathering external dependencies"
-echo 
+echo
 git submodule update --init --remote
 
 echo "-- building node.js"
@@ -16,8 +16,10 @@ make install
 cd $BUILD_ROOT
 
 echo "-- bootstraping node-gyp"
-echo 
+echo
 npm install -g node-gyp
+npm install -g gulp
+npm install -g gulp-coffee
 
 echo "-- bootstraping gyp"
 echo
@@ -32,4 +34,3 @@ else
 fi
 
 gyp --depth=. main.gyp
-
