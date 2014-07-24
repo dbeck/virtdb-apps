@@ -4,7 +4,7 @@
 zmq = require("zmq")
 fs = require("fs")
 p = require("node-protobuf")
-pb = new p(fs.readFileSync("../../src/proto/data.desc"))
+pb = new p(fs.readFileSync("../src/data.pb.desc"))
 
 # socket to talk to clients
 responder = zmq.socket("rep")
