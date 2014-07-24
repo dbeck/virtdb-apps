@@ -20,6 +20,8 @@ echo
 npm install node-gyp
 npm install gulp
 npm install gulp-coffee
+npm install zmq-3.0
+npm install protobuf
 
 echo "-- bootstraping gyp"
 echo
