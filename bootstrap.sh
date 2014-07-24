@@ -17,14 +17,14 @@ cd $BUILD_ROOT
 
 echo "-- bootstraping node-gyp, gulp"
 echo
-npm install -g node-gyp
-npm install -g gulp
-npm install -g gulp-coffee
+npm install node-gyp
+npm install gulp
+npm install gulp-coffee
 
 echo "-- bootstraping gyp"
 echo
-export PATH=$BUILD_ROOT/install/lib/node_modules/node-gyp/gyp:$PATH
-export GYP=$BUILD_ROOT/install/lib/node_modules/node-gyp/gyp/gyp
+export PATH=$BUILD_ROOT/node_modules/node-gyp/gyp:$PATH
+export GYP=$BUILD_ROOT/node_modules/node-gyp/gyp/gyp
 if [ -e $GYP ]
 then
   echo $GYP
@@ -33,4 +33,4 @@ else
   exit 100
 fi
 
-gyp --depth=. main.gyp
+$GYP --depth=. main.gyp
