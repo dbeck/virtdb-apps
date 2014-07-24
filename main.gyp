@@ -1,24 +1,23 @@
 {
   'variables': {
-    'protoc':               '<!(which protoc)',
-    # note: this could be simplified later like: pkg-config --libs --static protobuf libzmq
-    'protobuf_libs':        '<!(pkg-config --libs protobuf)',
-    'protobuf_static':      '<!(pkg-config --static protobuf)',
-    'protobuf_cflags':      '<!(pkg-config --cflags protobuf)',
-    'protobuf_exec_prefix': '<!(pkg-config --variable=exec_prefix protobuf)',
-    'protobuf_prefix':      '<!(pkg-config --variable=prefix protobuf)',
-    'protobuf_libdir':      '<!(pkg-config --variable=libdir protobuf)',
-    'protobuf_includedir':  '<!(pkg-config --variable=includedir protobuf)',
-    'libzmq_libs':          '<!(pkg-config --libs libzmq)',
-    'libzmq_static':        '<!(pkg-config --static libzmq)',
-    'libzmq_cflags':        '<!(pkg-config --cflags libzmq)',
-    'libzmq_exec_prefix':   '<!(pkg-config --variable=exec_prefix libzmq)',
-    'libzmq_prefix':        '<!(pkg-config --variable=prefix libzmq)',
-    'libzmq_libdir':        '<!(pkg-config --variable=libdir libzmq)',
-    'libzmq_includedir':    '<!(pkg-config --variable=includedir libzmq)',
-    'gcc_version':          '<!(gcc --version | head -1)',
-    'bad_gcc':              '<!(gcc --version | grep -c 4.8.)',
+    'protoc': '<!(which protoc)',
   },
+  'conditions': [
+    ['OS=="mac"', { 
+      'cflags': [ '<!@(pkg-config --cflags protobuf libzmq)', ], 
+      'xcode_settings': { 
+        'GCC_ENABLE_CPP_EXCEPTIONS': 'YES',
+        'OTHER_LDFLAGS': [ '<!@(pkg-config --libs-only-L --libs-only-l protobuf libzmq)' ],
+      },
+    },],
+    ['OS=="linux"', { 
+      'cflags': [ '<!@(pkg-config --cflags protobuf libzmq)', ], 
+      'link_settings': {
+        'ldflags': ['-Wl,--no-as-needed',],
+        'libraries': [ '<!@(pkg-config --libs-only-L --libs-only-l protobuf libzmq)', ], 
+      },
+    },],
+  ],
   'target_defaults': {
     'default_configuration': 'Debug',
     'configurations': {
@@ -30,6 +29,7 @@
       'install/include/node/',
       '/usr/local/include',
       '/usr/include',
+      '<!@(pkg-config --variable=includedir protobuf libzmq)',
     ],
     'cflags': [
       '-std=c++11',
@@ -44,12 +44,6 @@
       ['_type=="static_library"', {'cflags': ['-fPIC']}],
       ['_type=="executable"',     {'cflags': ['-fPIC']}],
     ],
-    'conditions': [
-      ['OS=="linux" and bad_gcc != 0', {
-          'link_settings': { 'ldflags': ['-Wl,--no-as-needed',], },
-        }, 
-      ],
-    ],
   },
   'targets' : [
     {
@@ -57,30 +51,14 @@
       'type': 'executable',
       'dependencies': [ 'common_pb_lib', 'meta_data_pb_lib', 'db_config_pb_lib', 'data_pb_lib' ],
       'sources': [ 'src/testme.cc', ],
-      'link_settings': {
-        'ldflags': [
-          '-fPIC',
-          '-L/usr/local/lib',
-          '-L/usr/lib',
-          '-L/opt/lib',
-        ],
-        'libraries': [ '-lprotobuf' ],
-      },
+      # 'link_settings': { 'ldflags': [ '-fPIC', '-L/usr/local/lib', '-L/usr/lib', '-L/opt/lib', ], },
     },
     {
       'target_name': 'dummy_metadata_service',
       'type': 'executable',
       'dependencies': [ 'common_pb_lib', 'meta_data_pb_lib', 'db_config_pb_lib', 'data_pb_lib' ],
       'sources': [ 'src/dummy_metadata_service.cc', ],
-      'link_settings': {
-        'ldflags': [
-          '-fPIC',
-          '-L/usr/local/lib',
-          '-L/usr/lib',
-          '-L/opt/lib',
-        ],
-        'libraries': [ '-lprotobuf' ],
-      },
+      # 'link_settings': { 'ldflags': [ '-fPIC', '-L/usr/local/lib', '-L/usr/lib', '-L/opt/lib', ], },
     },
     {
       'target_name': 'common_pb_lib',
