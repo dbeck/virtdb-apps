@@ -57,6 +57,7 @@ install/bin/npm
 install/share/man
 install/share/systemtap
 install/lib
+install/bin
 
 # node
 build

@@ -2,22 +2,22 @@
   'variables': {
     'protoc': '<!(which protoc)',
   },
-  'conditions': [
-    ['OS=="mac"', { 
-      'cflags': [ '<!@(pkg-config --cflags protobuf libzmq)', ], 
-      'xcode_settings': { 
-        'GCC_ENABLE_CPP_EXCEPTIONS': 'YES',
-        'OTHER_LDFLAGS': [ '<!@(pkg-config --libs-only-L --libs-only-l protobuf libzmq)' ],
-      },
-    },],
-    ['OS=="linux"', { 
-      'cflags': [ '<!@(pkg-config --cflags protobuf libzmq)', ], 
-      'link_settings': {
-        'ldflags': ['-Wl,--no-as-needed',],
-        'libraries': [ '<!@(pkg-config --libs-only-L --libs-only-l protobuf libzmq)', ], 
-      },
-    },],
-  ],
+  #'conditions': [
+  #  ['OS=="mac"', { 
+  #    'cflags': [ '<!@(pkg-config --cflags protobuf libzmq)', ], 
+  #    'xcode_settings': { 
+  #      'GCC_ENABLE_CPP_EXCEPTIONS': 'YES',
+  #      'OTHER_LDFLAGS': [ '<!@(pkg-config --libs-only-L --libs-only-l protobuf libzmq)' ],
+  #    },
+  #  },],
+    #['OS=="linux"', { 
+    #  'cflags': [ '<!@(pkg-config --cflags protobuf libzmq)', '-Werror' ], 
+    #  'link_settings': {
+    #    'ldflags': ['-Wl,--no-as-needed',],
+    #    'libraries': [ '<!@(pkg-config --libs-only-L --libs-only-l protobuf libzmq)', ], 
+    #  },
+    #},],
+  # ],
   'target_defaults': {
     'default_configuration': 'Debug',
     'configurations': {
@@ -44,6 +44,22 @@
       ['_type=="static_library"', {'cflags': ['-fPIC']}],
       ['_type=="executable"',     {'cflags': ['-fPIC']}],
     ],
+    'conditions': [
+      ['OS=="mac"', { 
+        'cflags': [ '<!@(pkg-config --cflags protobuf libzmq)', ], 
+        'xcode_settings': { 
+          'GCC_ENABLE_CPP_EXCEPTIONS': 'YES',
+          'OTHER_LDFLAGS': [ '<!@(pkg-config --libs-only-L --libs-only-l protobuf libzmq)' ],
+        },
+      },],
+      ['OS=="linux"', { 
+        'cflags': [ '<!@(pkg-config --cflags protobuf libzmq)', '-Werror' ], 
+        'link_settings': {
+          'ldflags': ['-Wl,--no-as-needed',],
+          'libraries': [ '<!@(pkg-config --libs-only-L --libs-only-l protobuf libzmq)', ], 
+        },
+      },],
+    ],
   },
   'targets' : [
     {
@@ -51,14 +67,12 @@
       'type': 'executable',
       'dependencies': [ 'common_pb_lib', 'meta_data_pb_lib', 'db_config_pb_lib', 'data_pb_lib' ],
       'sources': [ 'src/testme.cc', ],
-      # 'link_settings': { 'ldflags': [ '-fPIC', '-L/usr/local/lib', '-L/usr/lib', '-L/opt/lib', ], },
     },
     {
       'target_name': 'dummy_metadata_service',
       'type': 'executable',
       'dependencies': [ 'common_pb_lib', 'meta_data_pb_lib', 'db_config_pb_lib', 'data_pb_lib' ],
       'sources': [ 'src/dummy_metadata_service.cc', ],
-      # 'link_settings': { 'ldflags': [ '-fPIC', '-L/usr/local/lib', '-L/usr/lib', '-L/opt/lib', ], },
     },
     {
       'target_name': 'common_pb_lib',
