@@ -1,7 +1,7 @@
 [submodule "3rd-party/nodejs"]
 	path = 3rd-party/nodejs
 	url = https://github.com/starschema/node.git
-	branch = master
+	branch = branch_from_tag_v0.10.29
 [submodule "src/proto"]
 	path = src/proto
 	url = https://github.com/starschema/virtdb-proto.git
