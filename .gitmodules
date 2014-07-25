@@ -1,4 +1,4 @@
-[submodule "3rd-party/nodejs"]
+[submodule "src/node"]
 	path = src/node
 	url = https://github.com/starschema/node.git
 	branch = branch_from_tag_v0.10.29
