@@ -20,7 +20,7 @@ echo
 npm install node-gyp
 npm install gulp
 npm install gulp-coffee
-npm install zmq-3.0
+npm install zmq
 npm install protobuf
 npm install node-protobuf
 
