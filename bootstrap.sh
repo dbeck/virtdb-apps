@@ -9,7 +9,7 @@ git submodule update --init --remote
 
 echo "-- building node.js"
 echo
-cd 3rd-party/nodejs
+cd src/node
 ./configure --prefix=$BUILD_ROOT/install >/dev/null 2>&1
 make -j8 all
 make install
