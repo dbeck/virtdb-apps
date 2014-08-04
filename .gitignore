@@ -80,3 +80,4 @@ config.status
 *.target.mk
 *.Makefile
 out/
+gyp-mac-tool
