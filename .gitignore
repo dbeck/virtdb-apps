@@ -41,8 +41,9 @@ Testing
 # Temp files
 wipe-me
 
-# Xcode
+# Xcode / OSX
 *.xcodeproj
+*.DS_Store
 
 # generated / 3rd party
 include/node
