@@ -36,4 +36,4 @@ else
   exit 100
 fi
 
-$GYP --depth=. main.gyp
+$GYP --depth=. apps.gyp

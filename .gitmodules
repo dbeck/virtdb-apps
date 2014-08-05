@@ -10,3 +10,7 @@
 	path = src/cppzmq
 	url = https://github.com/starschema/cppzmq.git
 	branch = master
+[submodule "src/gtest"]
+	path = src/gtest
+	url = https://github.com/starschema/virtdb-gtest.git
+	branch = gtest-1.7.0
