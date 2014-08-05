@@ -28,10 +28,11 @@
     ],
     'conditions': [
       ['OS=="mac"', { 
-        'cflags': [ '<!@(pkg-config --cflags protobuf libzmq)', ], 
+        'cflags': [ '<!@(pkg-config --cflags protobuf libzmq)', '-std=c++11', ], 
         'xcode_settings': { 
           'GCC_ENABLE_CPP_EXCEPTIONS': 'YES',
           'OTHER_LDFLAGS': [ '<!@(pkg-config --libs-only-L --libs-only-l protobuf libzmq)' ],
+          'OTHER_CFLAGS': [ '-std=c++11', ],
         },
       },],
       ['OS=="linux"', { 
