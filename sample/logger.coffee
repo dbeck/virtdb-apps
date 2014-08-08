@@ -1,27 +1,30 @@
 exports.dumpExpression = (expression, indent) =>
-    console.log indent, "Operand:", expression.Operand
+    ret = ""
+    ret += indent + "Operand: " + expression.Operand + "\n"
     if expression.Composite
-        console.log indent, "Composite:"
+        ret += indent + "Composite:" + "\n"
         indent += "    "
         dumpExpression expression.Composite.Left, indent
         dumpExpression expression.Composite.Right, indent
     if expression.Simple
-        console.log indent, "Simple:"
+        ret += indent + "Simple:" + "\n"
         indent += "  "
-        console.log indent, "Variable: ", expression.Simple.Variable
-        console.log indent, "Value: ", expression.Simple.Value
+        ret += indent + "Variable: " + expression.Simple.Variable + "\n"
+        ret += indent + "Value: " + expression.Simple.Value + "\n"
 
 exports.dumpQuery = (query) =>
-    console.log "Query:"
+    ret = ""
+    ret += "Query:" + "\n"
     indent = "  "
-    console.log indent, "QueryId:", query.QueryId
-    console.log indent, "Table:", query.Table
+    ret += indent + "QueryId: " + query.QueryId + "\n"
+    ret += indent + "Table: " + query.Table + "\n"
     for filter in query.Filter
-        console.log  indent, "Filter:"
-        exports.dumpExpression filter, indent + "  "
+        ret +=  indent + "Filter:" + "\n"
+        ret += exports.dumpExpression filter, indent + "  "
     if query.Fields.length > 0
-        console.log indent, "Columns:"
+        ret += indent + "Columns:" + "\n"
     for field in query.Fields
-        console.log indent + "  ", field
+        ret += indent + "  " + JSON.stringify(field) + "\n"
     if query.Limit
-        console.log indent, "Limit: ", query.Limit
+        ret += indent + "Limit: " + query.Limit + "\n"
+    ret
