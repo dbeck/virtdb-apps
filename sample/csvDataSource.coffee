@@ -3,44 +3,60 @@
 # Expects Query from client
 #
 
+require('source-map-support').install();
+
 fs      = require("fs")             # reading data descriptor and CSV files
 csv     = require("csv")            # csv parsing
 glob    = require("glob")           # case insensitive file search
 logger  = require("./logger.js")
 protocol = require("./protocol.js")
 
+class FieldData
+    constructor: (field) ->
+        @Type = 2
+        @FieldName = field.Name
+        @StringValue = new Array()
+        @IsNull = new Array()
+
+    push: (value) =>
+        @StringValue.push value
+        @IsNull.push false
+
+    length: () =>
+        @StringValue.length
+
+    get: (index) =>
+        @StringValue[index]
+
 # CSV processing
 ProcessCSV = (query) =>
-    out_data = {}
+    out_data = new Array()
     limit = query.Limit || 100000
     for field in query.Fields
         out_data[field.Name] =
             QueryId: query.QueryId
             Name: field.Name
-            Data:
-                Type: 2
-                StringValue: Array()
-                IsNull: Array()
+            Data: new FieldData(field)
             EndOfData: true
     cursor = 0
     parser = csv.parse(
         columns: true
     )
     transformer = csv.transform(
+        # Called per row
         (data) ->
             for field in query.Fields
                 if cursor < limit
-                    out_data[field.Name].Data.StringValue.push data[field.Name]
-                    out_data[field.Name].Data.IsNull.push false
+                    out_data[field.Name].Data.push data[field.Name]
             cursor += 1
         ,
+        # Called once after all rows have been processed
         (err, output) ->
-            console.log "finished"
             for field in query.Fields
-                if out_data[field.Name].Data.StringValue.length >= 1
+                if out_data[field.Name].Data.length() >= 1
                     protocol.emit 'column', out_data[field.Name]
-                    #console.log buf
-                    console.log field.Name, " - length: ", out_data[field.Name].Data.StringValue.length, " last value: ", out_data[field.Name].Data.StringValue[out_data[field.Name].Data.StringValue.length - 1]
+                    console.log field.Name, " - length: ", out_data[field.Name].Data.length(), " last value: ",
+                            out_data[field.Name].Data.get(out_data[field.Name].Data.length() - 1)
     )
     glob("data/" + query.Table + ".csv", { nocase: true }, (err, files) ->
         if files.length != 1
@@ -52,7 +68,7 @@ ProcessCSV = (query) =>
 
 
 protocol.on "query", (query_data) ->
-    logger.dumpQuery query_data
+    #logger.dumpQuery query_data
     ProcessCSV query_data
     return
 
