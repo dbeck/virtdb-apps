@@ -8,35 +8,21 @@ require('source-map-support').install();
 fs      = require("fs")             # reading data descriptor and CSV files
 csv     = require("csv")            # csv parsing
 glob    = require("glob")           # case insensitive file search
-logger  = require("./logger.js")
-protocol = require("./protocol.js")
-
-class FieldData
-    constructor: (field) ->
-        @Type = 2
-        @FieldName = field.Name
-        @StringValue = new Array()
-        @IsNull = new Array()
-
-    push: (value) =>
-        @StringValue.push value
-        @IsNull.push false
-
-    length: () =>
-        @StringValue.length
-
-    get: (index) =>
-        @StringValue[index]
+logger  = require("./logger")
+protocol = require("./protocol")
+FieldData = require("./fieldData")
 
 # CSV processing
 ProcessCSV = (query) =>
+    limit = 100000
+    if query.Filter.length == 0 and query.limit
+        limit = query.Limit
     out_data = new Array()
-    limit = query.Limit || 100000
     for field in query.Fields
         out_data[field.Name] =
             QueryId: query.QueryId
             Name: field.Name
-            Data: new FieldData(field)
+            Data: FieldData.createInstance(field)
             EndOfData: true
     cursor = 0
     parser = csv.parse(
