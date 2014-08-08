@@ -1,6 +1,7 @@
 var gulp = require('gulp');
 var coffee = require('gulp-coffee');
 var spawn = require('child_process').spawn;
+var sourcemaps = require('gulp-sourcemaps');
 var node;
 
 /**
@@ -24,7 +25,9 @@ gulp.task('server', function() {
 
 gulp.task('coffee', function() {
     gulp.src('*.coffee')
+        .pipe(sourcemaps.init())
         .pipe(coffee({bare: true}))
+        .pipe(sourcemaps.write('.'))
         .pipe(gulp.dest('./out'))
 });
 
