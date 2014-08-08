@@ -11,10 +11,13 @@ glob    = require("glob")           # case insensitive file search
 logger  = require("./logger")
 protocol = require("./protocol")
 FieldData = require("./fieldData")
+config = require("./config")
+CONST = config.Const
+log = require('loglevel');
 
 # CSV processing
 ProcessCSV = (query) =>
-    limit = 100000
+    limit = CONST.MAX_CHUNK_SIZE
     if query.Filter.length == 0 and query.limit
         limit = query.Limit
     out_data = new Array()
@@ -41,23 +44,24 @@ ProcessCSV = (query) =>
             for field in query.Fields
                 if out_data[field.Name].Data.length() >= 1
                     protocol.emit 'column', out_data[field.Name]
-                    console.log field.Name, " - length: ", out_data[field.Name].Data.length(), " last value: ",
+                    log.debug field.Name, " - length: ", out_data[field.Name].Data.length(), " last value: ",
                             out_data[field.Name].Data.get(out_data[field.Name].Data.length() - 1)
     )
     glob("data/" + query.Table + ".csv", { nocase: true }, (err, files) ->
         if files.length != 1
-            console.log "Error. Not excatly one file with that name"
+            log.error "Error. Not excatly one file with that name"
         else
-            console.log "Opening file: ", files[0]
+            log.debug "Opening file: ", files[0]
             fs.createReadStream(files[0]).pipe(parser).pipe(transformer)
     )
 
 
-protocol.on "query", (query_data) ->
-    #logger.dumpQuery query_data
+protocol.on CONST.QUERY.MESSAGE, (query_data) ->
+    log.info "Query arrived: ", query_data.Table
+    log.debug logger.dumpQuery query_data
     ProcessCSV query_data
     return
 
 process.on "SIGINT", ->
-    protocol.emit 'close'
+    protocol.emit CONST.CLOSE_MESSAGE
     return
