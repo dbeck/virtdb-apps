@@ -31,6 +31,9 @@ class FieldData
     push: (value) =>
         @IsNull.push true
 
+    reset: () =>
+        @IsNull = new Array()
+
 class StringFieldData extends FieldData
     constructor: (field) ->
         super
@@ -48,6 +51,10 @@ class StringFieldData extends FieldData
             @StringValue[index]
         else
             null
+
+    reset: () =>
+        super
+        @StringValue = new Array()
 
 # Not yet supported - can only store null values
 class Int32FieldData extends FieldData
