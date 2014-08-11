@@ -13,8 +13,10 @@ namespace
   template <typename EXC>
   int usage(const EXC & exc)
   {
-    std::cerr << "Exception: " << exc.what() << "\n\n"
-              << "Usage: diag_svc_sample <ZeroMQ-EndPoint>\n\n"
+    std::cerr << "Exception: " << exc.what() << "\n"
+              << "\n"
+              << "Usage: diag_svc_sample <ZeroMQ-EndPoint>\n"
+              << "\n"
               << " endpoint examples: \n"
               << "  \"ipc:///tmp/diag-endpoint\"\n"
               << "  \"tcp://localhost:65001\"\n\n";
@@ -26,15 +28,27 @@ namespace
     bool operator()(const virtdb::interface::pb::ProcessInfo & lhs,
                     const virtdb::interface::pb::ProcessInfo & rhs) const
     {
-      if( lhs.startdate() < rhs.startdate() ) return true;
-      else if( lhs.startdate() > rhs.startdate() ) return false;
-      if( lhs.starttime() < rhs.starttime() ) return true;
-      else if( lhs.starttime() > rhs.starttime() ) return false;
-      if( lhs.pid() < rhs.pid() ) return true;
-      else if( lhs.pid() > rhs.pid() ) return false;
-      if( lhs.random() < rhs.random() ) return true;
-      else if( lhs.random() > rhs.random() ) return false;
-      return false;
+      if( lhs.startdate() < rhs.startdate() )
+        return true;
+      else if( lhs.startdate() > rhs.startdate() )
+        return false;
+      
+      if( lhs.starttime() < rhs.starttime() )
+        return true;
+      else if( lhs.starttime() > rhs.starttime() )
+        return false;
+      
+      if( lhs.pid() < rhs.pid() )
+        return true;
+      else if( lhs.pid() > rhs.pid() )
+        return false;
+      
+      if( lhs.random() < rhs.random() )
+        return true;
+      else if( lhs.random() > rhs.random() )
+        return false;
+      else
+        return false;
     }
   };
   
@@ -81,7 +95,7 @@ namespace
       }
     }
     
-    std::string sym(const symbol_map & smap, uint32_t id) const
+    std::string resolve(const symbol_map & smap, uint32_t id) const
     {
       static const std::string empty("''");
       auto it = smap.find(id);
@@ -91,34 +105,77 @@ namespace
         return it->second;
     }
     
+    void print_variable(const pb::ValueType & var) const
+    {
+      switch( var.type() )
+      {
+        case pb::Kind::BOOL:   std::cout << (var.boolvalue(0)?"true":"false"); break;
+        case pb::Kind::FLOAT:  std::cout << var.floatvalue(0); break;
+        case pb::Kind::DOUBLE: std::cout << var.doublevalue(0); break;
+        case pb::Kind::STRING: std::cout << var.stringvalue(0); break;
+        case pb::Kind::INT32:  std::cout << var.int32value(0); break;
+        case pb::Kind::UINT32: std::cout << var.uint32value(0); break;
+        case pb::Kind::INT64:  std::cout << var.int64value(0); break;
+        case pb::Kind::UINT64: std::cout << var.uint64value(0); break;
+      };
+    }
+    
     void print_data(const pb::ProcessInfo & proc_info,
                     const pb::LogData & data,
                     const pb::LogHeader & head,
                     const symbol_map & symbol_table) const
     {
+      // TODO : loglevel
       std::cout << '[' << proc_info.pid() << ':' << data.threadid() << ']'
-                << " @" << sym(symbol_table,head.filenamesymbol()) << ':'
-                << head.linenumber() << " " << sym(symbol_table,head.functionnamesymbol())
+                << " @" << resolve(symbol_table,head.filenamesymbol()) << ':'
+                << head.linenumber() << " " << resolve(symbol_table,head.functionnamesymbol())
                 << "() @" << data.elapsedmicrosec() << "us ";
       
       int var_idx = 0;
-      for( int i=0; i<head.parts_size(); ++i )
+
+      if( head.level() == pb::LogLevel::SCOPED_TRACE &&
+          data.has_endscope() &&
+          data.endscope() )
       {
-        auto part = head.parts(i);
-        if( part.has_partsymbol() )
-          std::cout << " " << sym(symbol_table, part.partsymbol());
-        
-        /*
-        if( part.isvariable() )
-        {
-          if( part.has_partsymbol() )
-            std::cout << " " << sym(symbol_table, part.partsymbol());
-          if( part.has_hasdata() )
-            std::cout << " xxx ";
-        }
-         */
+        std::cout << " [EXIT] ";
       }
-      
+      else
+      {
+        if( head.level() == pb::LogLevel::SCOPED_TRACE )
+          std::cout << " [ENTER] ";
+        
+        for( int i=0; i<head.parts_size(); ++i )
+        {
+          auto part = head.parts(i);
+          
+          if( part.isvariable() && part.hasdata() )
+          {
+            if( part.has_partsymbol() )
+              std::cout << " " << resolve(symbol_table, part.partsymbol()) << "=";
+            
+            if( var_idx < data.values_size() )
+              print_variable( data.values(var_idx) );
+            else
+              std::cout << "'?'";
+            
+            ++var_idx;
+          }
+          else if( part.hasdata() )
+          {
+            std::cout << " ";
+            if( var_idx < data.values_size() )
+              print_variable( data.values(var_idx) );
+            else
+              std::cout << "'?'";
+            
+            ++var_idx;
+          }
+          else if( part.has_partsymbol() )
+          {
+            std::cout << " " << resolve(symbol_table, part.partsymbol());
+          }
+        }
+      }
       std::cout << "\n";
     }
     

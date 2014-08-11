@@ -10,11 +10,13 @@ namespace
   template <typename EXC>
   int usage(const EXC & exc)
   {
-    std::cerr << "Exception: " << exc.what() << "\n\n"
-    << "Usage: diag_client_sample <ZeroMQ-EndPoint>\n\n"
-    << " endpoint examples: \n"
-    << "  \"ipc:///tmp/diag-endpoint\"\n"
-    << "  \"tcp://localhost:65001\"\n\n";
+    std::cerr << "Exception: " << exc.what() << "\n"
+              << "\n"
+              << "Usage: diag_client_sample <ZeroMQ-EndPoint>\n"
+              << "\n"
+              << " endpoint examples: \n"
+              << "  \"ipc:///tmp/diag-endpoint\"\n"
+              << "  \"tcp://localhost:65001\"\n\n";
     return 100;
   }
   
@@ -25,13 +27,13 @@ namespace
   
   void log_error_test()
   {
-    LOG_ERROR("humidity exceeds " << 0.98 << " percent");
+    LOG_ERROR("humidity exceeds" << 0.98 << "percent");
   }
   
   void log_scoped_test()
   {
     int celsius = 100;
-    LOG_SCOPED("temperature is" << celsius << "degrees");
+    LOG_SCOPED("temperature is" << V_(celsius) << "degrees");
   }
 }
 
