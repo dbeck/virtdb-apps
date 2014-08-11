@@ -35,7 +35,7 @@ publisher_socket.bind CONST.DATA.URL, (err) ->
 module.exports.on CONST.DATA.MESSAGE, (column_data) ->
     buf = pb.serialize(column_data, "virtdb.interface.pb.Column")
     publisher_socket.send(buf)
-    log.info "Column data sent: ", column_data.Name, "(", column_data.Data.length() ,")"
+    log.debug "Column data sent: ", column_data.Name, "(", column_data.Data.length() ,")"
 
 # On exit close the sockets
 module.exports.on CONST.CLOSE_MESSAGE, () ->
