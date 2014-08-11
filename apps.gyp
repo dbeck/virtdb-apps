@@ -44,12 +44,12 @@
       },],
     ],
   },
-  #'targets' : [
-  #  {
-  #    'target_name':       'meta_data_svc_sample',
-  #    'type':              'executable',
-  #    'dependencies':      [ 'src/proto/proto.gyp:proto', ],
-  #    'sources':           [ 'sample/meta_data_svc_sample.cc', ],
-  #  },
-  #],
+  'targets' : [
+    {
+      'target_name':       'diag_svc_sample',
+      'type':              'executable',
+      'dependencies':      [ 'src/proto/proto.gyp:proto', ],
+      'sources':           [ 'sample/diag_svc_sample.cc', ],
+    },
+  ],
 }
