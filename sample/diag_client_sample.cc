@@ -32,8 +32,11 @@ namespace
   
   void log_scoped_test()
   {
-    int celsius = 100;
-    LOG_SCOPED("temperature is" << V_(celsius) << "degrees");
+    for( int i=100; i<105; ++i )
+    {
+      int celsius = i;
+      LOG_SCOPED("temperature is" << V_(celsius) << "degrees");
+    }
   }
 }
 

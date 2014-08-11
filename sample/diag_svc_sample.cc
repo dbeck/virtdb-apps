@@ -117,7 +117,25 @@ namespace
         case pb::Kind::UINT32: std::cout << var.uint32value(0); break;
         case pb::Kind::INT64:  std::cout << var.int64value(0); break;
         case pb::Kind::UINT64: std::cout << var.uint64value(0); break;
+        default:               std::cout << "'unhandled-type'"; break;
       };
+    }
+    
+    static const std::string &
+    level_string( pb::LogLevel level )
+    {
+      static std::map<pb::LogLevel, std::string> level_map{
+        { pb::LogLevel::INFO,          "INFO", },
+        { pb::LogLevel::ERROR,         "ERROR", },
+        { pb::LogLevel::SIMPLE_TRACE,  "TRACE", },
+        { pb::LogLevel::SCOPED_TRACE,  "SCOPED" },
+      };
+      static std::string unknown("UNKNOWN");
+      auto it = level_map.find(level);
+      if( it == level_map.end() )
+        return unknown;
+      else
+        return it->second;
     }
     
     void print_data(const pb::ProcessInfo & proc_info,
@@ -125,8 +143,8 @@ namespace
                     const pb::LogHeader & head,
                     const symbol_map & symbol_table) const
     {
-      // TODO : loglevel
-      std::cout << '[' << proc_info.pid() << ':' << data.threadid() << ']'
+      std::cout << '[' << proc_info.pid() << ':' << data.threadid() << "] "
+                << level_string(head.level())
                 << " @" << resolve(symbol_table,head.filenamesymbol()) << ':'
                 << head.linenumber() << " " << resolve(symbol_table,head.functionnamesymbol())
                 << "() @" << data.elapsedmicrosec() << "us ";
@@ -150,13 +168,16 @@ namespace
           
           if( part.isvariable() && part.hasdata() )
           {
+            std::cout << " {";
             if( part.has_partsymbol() )
-              std::cout << " " << resolve(symbol_table, part.partsymbol()) << "=";
+              std::cout << resolve(symbol_table, part.partsymbol()) << "=";
             
             if( var_idx < data.values_size() )
               print_variable( data.values(var_idx) );
             else
               std::cout << "'?'";
+            
+            std::cout << '}';
             
             ++var_idx;
           }
