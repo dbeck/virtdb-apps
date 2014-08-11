@@ -26,26 +26,42 @@ ProcessCSV = (query) =>
             QueryId: query.QueryId
             Name: field.Name
             Data: FieldData.createInstance(field)
-            EndOfData: true
+            EndOfData: false
     cursor = 0
     parser = csv.parse(
         columns: true
     )
+    sendData = (column) ->
+        protocol.emit 'column', column
+        if column.EndOfData == true
+            log.info field.Name, " - length: ", column.Data.length(), " last value: ",
+                    column.Data.get(column.Data.length() - 1)
+        else
+            log.debug field.Name, " - length: ", column.Data.length(), " last value: ",
+                    column.Data.get(column.Data.length() - 1)
+
     transformer = csv.transform(
         # Called per row
         (data) ->
-            for field in query.Fields
-                if cursor < limit
-                    out_data[field.Name].Data.push data[field.Name]
             cursor += 1
+            for field in query.Fields
+                out_data[field.Name].Data.push data[field.Name]
+                if cursor == limit
+                    out_data[field.Name].EndOfData = false;
+                    sendData out_data[field.Name]
+                    out_data[field.Name].Data.reset()
+            if cursor == limit
+                cursor = 0
         ,
         # Called once after all rows have been processed
         (err, output) ->
+            if err
+                log.error err
+                return
             for field in query.Fields
-                if out_data[field.Name].Data.length() >= 1
-                    protocol.emit 'column', out_data[field.Name]
-                    log.debug field.Name, " - length: ", out_data[field.Name].Data.length(), " last value: ",
-                            out_data[field.Name].Data.get(out_data[field.Name].Data.length() - 1)
+                # if out_data[field.Name].Data.length() >= 1
+                out_data[field.Name].EndOfData = true;
+                sendData out_data[field.Name]
     )
     glob("data/" + query.Table + ".csv", { nocase: true }, (err, files) ->
         if files.length != 1
