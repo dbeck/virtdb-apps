@@ -8,6 +8,7 @@
     'include_dirs': [ 
       'src/',
       'src/cppzmq/',
+      'src/proto/',
       'install/include/node/',
       '/usr/local/include/',
       '/usr/include/',
@@ -44,12 +45,18 @@
       },],
     ],
   },
-  #'targets' : [
-  #  {
-  #    'target_name':       'meta_data_svc_sample',
-  #    'type':              'executable',
-  #    'dependencies':      [ 'src/proto/proto.gyp:proto', ],
-  #    'sources':           [ 'sample/meta_data_svc_sample.cc', ],
-  #  },
-  #],
+  'targets' : [
+    {
+      'target_name':       'diag_svc_sample',
+      'type':              'executable',
+      'dependencies':      [ 'src/proto/proto.gyp:proto', ],
+      'sources':           [ 'sample/diag_svc_sample.cc', ],
+    },
+    {
+      'target_name':       'diag_client_sample',
+      'type':              'executable',
+      'dependencies':      [ 'src/proto/proto.gyp:proto', ],
+      'sources':           [ 'sample/diag_client_sample.cc', ],
+    },
+  ],
 }
