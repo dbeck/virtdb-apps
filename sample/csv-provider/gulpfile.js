@@ -39,4 +39,4 @@ gulp.task('watch', function()
     })
 });
 
-gulp.task('default', ['watch', 'server']);
+gulp.task('default', ['coffee', 'watch', 'server']);
