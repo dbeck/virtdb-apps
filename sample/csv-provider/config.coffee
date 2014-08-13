@@ -1,5 +1,5 @@
 log = require('loglevel');
-log.setLevel('info')
+log.setLevel('debug')
 
 class Config
     @Const:
@@ -9,8 +9,14 @@ class Config
         DATA:
             MESSAGE: "column"
             URL: "tcp://*:5556"
+            PROTO_FILE: "../../src/proto/data.desc"
+        METADATA:
+            MESSAGE: "metadata"
+            REPLY:
+                MESSAGE: "metadata_reply"
+            URL: "tcp://*:5557"
+            PROTO_FILE: "../../src/proto/meta_data.desc"
         MAX_CHUNK_SIZE: 100000
-        PROTO_FILE: "../src/proto/data.desc"
         CLOSE_MESSAGE: "close"
 
 module.exports = Config
