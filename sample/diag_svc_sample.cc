@@ -2,11 +2,13 @@
 #include <diag.pb.h>
 #include <logger.hh>
 #include <util/exception.hh>
+#include <util/net.hh>
 #include <zmq.hpp>
 #include <iostream>
 #include <map>
 
 using namespace virtdb::interface;
+using namespace virtdb::util;
 
 namespace
 {
@@ -143,9 +145,17 @@ namespace
                     const pb::LogHeader & head,
                     const symbol_map & symbol_table) const
     {
-      std::cout << '[' << proc_info.pid() << ':' << data.threadid() << "] "
-                << level_string(head.level())
-                << " @" << resolve(symbol_table,head.filenamesymbol()) << ':'
+      std::ostringstream host_and_name;
+  
+      if( proc_info.has_hostsymbol() )
+        host_and_name << " " << resolve(symbol_table, proc_info.hostsymbol());
+      if( proc_info.has_namesymbol() )
+        host_and_name << "/" << resolve(symbol_table, proc_info.namesymbol());
+      
+      std::cout << '[' << proc_info.pid() << ':' << data.threadid() << "]"
+                << host_and_name.str()
+                << " (" << level_string(head.level())
+                << ") @" << resolve(symbol_table,head.filenamesymbol()) << ':'
                 << head.linenumber() << " " << resolve(symbol_table,head.functionnamesymbol())
                 << "() @" << data.elapsedmicrosec() << "us ";
       
@@ -275,10 +285,14 @@ int main(int argc, char ** argv)
       
       for( int i=0; i<rec.symbols_size(); ++i )
         log_static_data.add_symbol(rec.process(), rec.symbols(i));
+
+      int fd;
+      size_t len = sizeof(fd);
+      socket.getsockopt(ZMQ_FD, &fd, &len);
+      auto peer = net::get_peer_ip(fd);
+      std::cout << fd << " " << peer.first << ":" << peer.second << "\n";
       
       log_static_data.print_message(rec);
-      
-      // std::cout << rec.DebugString() << "\n";
     }
   }
   catch (const std::exception & e)

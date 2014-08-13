@@ -29,8 +29,8 @@ namespace
   
   struct compare_endpoints
   {
-    bool operator()(const pb::Endpoint & lhs,
-                    const pb::Endpoint & rhs) const
+    bool operator()(const pb::EndpointData & lhs,
+                    const pb::EndpointData & rhs) const
     {
       if( lhs.name() < rhs.name() )
         return true;
@@ -64,12 +64,13 @@ int main(int argc, char ** argv)
     req_rep_socket.bind( argv[1] );
     pub_sub_socket.bind( argv[2] );
 
-    typedef std::set<pb::Endpoint, compare_endpoints> endpoint_set;
+    typedef std::set<pb::EndpointData, compare_endpoints> endpoint_set;
 
     // register our own endpoint service
-    endpoint_set   endpoints;
-    pb::Endpoint   self_endpoint;
+    endpoint_set       endpoints;
+    pb::EndpointData   self_endpoint;
     
+    /*
     self_endpoint.set_name("svc_config");
     self_endpoint.set_svctype(pb::ServiceType::ENDPOINT);
     {
@@ -86,6 +87,7 @@ int main(int argc, char ** argv)
     }
     
     endpoints.insert( self_endpoint );
+    */
     
     
     // svc: PUB/Cfg, PULL/Cfg, REP/EP, PUB/EP

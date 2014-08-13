@@ -4,6 +4,7 @@
 #include <zmq.hpp>
 #include <memory>
 #include <chrono>
+#include <thread>
 
 namespace
 {
