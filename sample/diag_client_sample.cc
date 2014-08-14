@@ -52,6 +52,9 @@ int main(int argc, char ** argv)
       THROW_("invalid number of arguments");
     }
     
+    //
+    virtdb::logger::process_info::set_app_name("diag_client");
+    
     // initialize 0MQ and logger
     zmq::context_t context(1);
     std::shared_ptr<zmq::socket_t> socket_sptr(new zmq::socket_t(context,ZMQ_PUSH));

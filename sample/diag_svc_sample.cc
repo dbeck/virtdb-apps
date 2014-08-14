@@ -1,4 +1,5 @@
 
+#include <svc_config.pb.h>
 #include <diag.pb.h>
 #include <logger.hh>
 #include <util/exception.hh>
@@ -7,6 +8,8 @@
 #include <iostream>
 #include <map>
 
+using namespace virtdb;
+// using namespace virtdb::app;
 using namespace virtdb::interface;
 using namespace virtdb::util;
 
@@ -260,40 +263,97 @@ int main(int argc, char ** argv)
     {
       THROW_("invalid number of arguments");
     }
+    
+    logger::process_info::set_app_name("diag_svc");
 
-    zmq::context_t context(1);
+    zmq::context_t context(2);
+    zmq::socket_t  ep_req_socket(context,ZMQ_REQ);
+    ep_req_socket.connect(argv[1]);
+    
+    // register ourselves
+    {
+      pb::Endpoint diag_ep;
+      auto ep_data = diag_ep.add_endpoints();
+      ep_data->set_name("diag_svc");
+      ep_data->set_svctype(pb::ServiceType::LOG_RECORD);
+      int ep_size = diag_ep.ByteSize();
+      if( ep_size > 0 )
+      {
+        std::unique_ptr<unsigned char[]> msg_data{new unsigned char[ep_size]};
+        bool serialized = diag_ep.SerializeToArray(msg_data.get(), ep_size);
+        if( !serialized )
+        {
+          THROW_("Couldn't serialize our own endpoint data");
+        }
+        ep_req_socket.send( msg_data.get(), ep_size );
+        zmq::message_t msg;
+        ep_req_socket.recv(&msg);
+        
+        if( !msg.data() || !msg.size() )
+        {
+          THROW_("invalid Endpoint message received");
+        }
+        
+        pb::Endpoint peers;
+        serialized = peers.ParseFromArray(msg.data(), msg.size());
+        if( !serialized )
+        {
+          THROW_("couldn't process peer Endpoints");
+        }
+        std::cerr << peers.DebugString() << "\n";
+      }
+      
+      // decide what is our IP address ...
+      // TODO
+    }
+    
+    
+    /*
     zmq::socket_t socket(context, ZMQ_PULL);
     socket.bind(argv[1]);
     
     log_data log_static_data;
     
-    
     while( true )
     {
-      zmq::message_t message;
-      if( !socket.recv(&message) )
-        continue;
-      
-      LogRecord rec;
-      if( !message.data() || !message.size())
-        continue;
-      
-      rec.ParseFromArray(message.data(), message.size());
-      
-      for( int i=0; i<rec.headers_size(); ++i )
-        log_static_data.add_header(rec.process(),rec.headers(i));
-      
-      for( int i=0; i<rec.symbols_size(); ++i )
-        log_static_data.add_symbol(rec.process(), rec.symbols(i));
+      try
+      {
+        zmq::message_t message;
+        if( !socket.recv(&message) )
+          continue;
+        
+        LogRecord rec;
+        if( !message.data() || !message.size())
+          continue;
+        
+        bool parsed = rec.ParseFromArray(message.data(), message.size());
+        if( !parsed )
+          continue;
+        
+        for( int i=0; i<rec.headers_size(); ++i )
+          log_static_data.add_header(rec.process(),rec.headers(i));
+        
+        for( int i=0; i<rec.symbols_size(); ++i )
+          log_static_data.add_symbol(rec.process(), rec.symbols(i));
+        
+        int fd;
+        size_t len = sizeof(fd);
+        socket.getsockopt(ZMQ_FD, &fd, &len);
+        auto peer = net::get_peer_ip(fd);
+        
+        log_static_data.print_message(rec);
 
-      int fd;
-      size_t len = sizeof(fd);
-      socket.getsockopt(ZMQ_FD, &fd, &len);
-      auto peer = net::get_peer_ip(fd);
-      std::cout << fd << " " << peer.first << ":" << peer.second << "\n";
-      
-      log_static_data.print_message(rec);
+      }
+      catch (const std::exception & e)
+      {
+        std::cerr << "cannot process message. exception: " << e.what() << "\n";
+      }
+      catch (...)
+      {
+        std::cerr << "unknown exception caught while processing log message\n";
+      }
     }
+     */
   }
   catch (const std::exception & e)
   {
