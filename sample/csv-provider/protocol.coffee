@@ -47,7 +47,7 @@ metadata_socket.on "message", (request) ->
     return
 
 module.exports.on CONST.METADATA.REPLY.MESSAGE, (data) ->
-    buf = proto_meta.serialize(data, "virtdb.interface.pb.MetaDataReply")
+    buf = proto_meta.serialize(data, "virtdb.interface.pb.MetaData")
     metadata_socket.send buf
     # publisher_socket.send(buf)
     # log.debug "Column data sent: ", column_data.Name, "(", column_data.Data.length() ,")"
