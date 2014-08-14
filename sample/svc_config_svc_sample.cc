@@ -199,6 +199,7 @@ int main(int argc, char ** argv)
                   diag_eps.insert(ep_data);
               }
             }
+            std::cerr << "endpoint request arrived: \n" << request.DebugString() << "\n";
           }
         }
         catch (const std::exception & e)
@@ -291,6 +292,7 @@ int main(int argc, char ** argv)
             });
             // we don't wait for this to complete
             connect_logger.detach();
+            LOG_INFO("logger configured");
           }
         }
       }

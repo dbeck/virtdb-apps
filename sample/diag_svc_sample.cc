@@ -1,15 +1,19 @@
 
+// proto
 #include <svc_config.pb.h>
 #include <diag.pb.h>
 #include <logger.hh>
 #include <util/exception.hh>
 #include <util/net.hh>
+// apps
+#include <discovery.hh>
+// others
 #include <zmq.hpp>
 #include <iostream>
 #include <map>
 
 using namespace virtdb;
-// using namespace virtdb::app;
+using namespace virtdb::apps;
 using namespace virtdb::interface;
 using namespace virtdb::util;
 
@@ -267,8 +271,10 @@ int main(int argc, char ** argv)
     logger::process_info::set_app_name("diag_svc");
 
     zmq::context_t context(2);
-    zmq::socket_t  ep_req_socket(context,ZMQ_REQ);
+    zmq::socket_t ep_req_socket(context,ZMQ_REQ);
+    zmq::socket_t diag_socket(context, ZMQ_PULL);
     ep_req_socket.connect(argv[1]);
+    std::string diag_service_address;
     
     // register ourselves
     {
@@ -277,6 +283,7 @@ int main(int argc, char ** argv)
       ep_data->set_name("diag_svc");
       ep_data->set_svctype(pb::ServiceType::LOG_RECORD);
       int ep_size = diag_ep.ByteSize();
+      
       if( ep_size > 0 )
       {
         std::unique_ptr<unsigned char[]> msg_data{new unsigned char[ep_size]};
@@ -300,32 +307,102 @@ int main(int argc, char ** argv)
         {
           THROW_("couldn't process peer Endpoints");
         }
-        std::cerr << peers.DebugString() << "\n";
+        
+        discovery::endpoint_vector ep_strings;
+        for( int i=0; i<peers.endpoints_size(); ++i )
+        {
+          auto ep = peers.endpoints(i);
+          if( ep.svctype() == pb::ServiceType::IP_DISCOVERY )
+          {
+            for( int ii=0; ii<ep.connections_size(); ++ii )
+            {
+              auto conn = ep.connections(ii);
+              if( conn.type() == pb::ConnectionType::RAW_UDP )
+              {
+                for( int iii=0; iii<conn.address_size(); ++iii )
+                {
+                  ep_strings.push_back(conn.address(iii));
+                }
+              }
+            }
+          }
+        }
+        
+        std::string my_ip = discovery_client::get_ip(ep_strings);
+        if( my_ip.empty() )
+        {
+          net::string_vector my_ips = util::net::get_own_ips();
+          if( !my_ips.empty() )
+            my_ip = my_ips[0];
+        }
+        if( my_ip.empty() )
+        {
+          THROW_("cannot find a valid IP address");
+        }
+        
+        std::ostringstream os;
+        os << "tcp://" << my_ip << ":*";
+        diag_socket.bind(os.str().c_str());
+        
+        {
+          // TODO: refactor to separate class ...
+          char last_zmq_endpoint[512];
+          last_zmq_endpoint[0] = 0;
+          size_t opt_size = sizeof(last_zmq_endpoint);
+          diag_socket.getsockopt(ZMQ_LAST_ENDPOINT, last_zmq_endpoint, &opt_size);
+          last_zmq_endpoint[sizeof(last_zmq_endpoint)-1] = 0;
+          
+          auto conn = ep_data->add_connections();
+          conn->set_type(pb::ConnectionType::PUSH_PULL);
+          diag_service_address = last_zmq_endpoint;
+          *(conn->add_address()) = last_zmq_endpoint;
+        }
       }
       
-      // decide what is our IP address ...
-      // TODO
+      // resend message
+      if( ep_data->connections_size() > 0 )
+      {
+        ep_size = diag_ep.ByteSize();
+        std::unique_ptr<unsigned char[]> msg_data{new unsigned char[ep_size]};
+        bool serialized = diag_ep.SerializeToArray(msg_data.get(), ep_size);
+        if( !serialized )
+        {
+          THROW_("Couldn't serialize our own endpoint data");
+        }
+        ep_req_socket.send( msg_data.get(), ep_size );
+        zmq::message_t msg;
+        ep_req_socket.recv(&msg);
+        
+        if( !msg.data() || !msg.size() )
+        {
+          THROW_("invalid Endpoint message received");
+        }
+        
+        pb::Endpoint peers;
+        serialized = peers.ParseFromArray(msg.data(), msg.size());
+        if( !serialized )
+        {
+          THROW_("couldn't process peer Endpoints");
+        }
+      }
     }
     
-    
-    /*
-    zmq::socket_t socket(context, ZMQ_PULL);
-    socket.bind(argv[1]);
-    
     log_data log_static_data;
+    std::cerr << "Diag service started at: " << diag_service_address << "\n";
     
     while( true )
     {
       try
       {
         zmq::message_t message;
-        if( !socket.recv(&message) )
+        if( !diag_socket.recv(&message) )
           continue;
         
         LogRecord rec;
         if( !message.data() || !message.size())
           continue;
         
+        std::cerr << "Log message arrived\n";
         bool parsed = rec.ParseFromArray(message.data(), message.size());
         if( !parsed )
           continue;
@@ -335,11 +412,6 @@ int main(int argc, char ** argv)
         
         for( int i=0; i<rec.symbols_size(); ++i )
           log_static_data.add_symbol(rec.process(), rec.symbols(i));
-        
-        int fd;
-        size_t len = sizeof(fd);
-        socket.getsockopt(ZMQ_FD, &fd, &len);
-        auto peer = net::get_peer_ip(fd);
         
         log_static_data.print_message(rec);
 
@@ -353,7 +425,6 @@ int main(int argc, char ** argv)
         std::cerr << "unknown exception caught while processing log message\n";
       }
     }
-     */
   }
   catch (const std::exception & e)
   {
