@@ -4,6 +4,7 @@
 #include <zmq.hpp>
 #include <memory>
 #include <chrono>
+#include <thread>
 
 namespace
 {
@@ -50,6 +51,9 @@ int main(int argc, char ** argv)
     {
       THROW_("invalid number of arguments");
     }
+    
+    //
+    virtdb::logger::process_info::set_app_name("diag_client");
     
     // initialize 0MQ and logger
     zmq::context_t context(1);
