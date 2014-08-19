@@ -3,8 +3,8 @@
 #include <svc_config.pb.h>
 #include <diag.pb.h>
 #include <logger.hh>
-#include <util/exception.hh>
-#include <util/net.hh>
+#include <util.hh>
+#include <connector.hh>
 // apps
 #include <discovery.hh>
 // others
@@ -16,6 +16,7 @@ using namespace virtdb;
 using namespace virtdb::apps;
 using namespace virtdb::interface;
 using namespace virtdb::util;
+using namespace virtdb::connector;
 
 namespace
 {
@@ -267,6 +268,10 @@ int main(int argc, char ** argv)
     {
       THROW_("invalid number of arguments");
     }
+    
+    endpoint_client     ep_clnt(argv[1], "diag_svc");
+    config_client       cfg_clnt(ep_clnt);
+    log_record_server   log_svr(cfg_clnt);
     
     logger::process_info::set_app_name("diag_svc");
 

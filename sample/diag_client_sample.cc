@@ -52,6 +52,9 @@ int main(int argc, char ** argv)
       THROW_("invalid number of arguments");
     }
     
+    endpoint_client     ep_clnt(argv[1], "diag_client");
+    log_record_client   log_clnt(ep_clnt);
+
     //
     virtdb::logger::process_info::set_app_name("diag_client");
     

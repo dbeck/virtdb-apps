@@ -2,8 +2,8 @@
 // proto
 #include <svc_config.pb.h>
 #include <logger.hh>
-#include <util/exception.hh>
-#include <util/net.hh>
+#include <util.hh>
+#include <connector.hh>
 // apps
 #include <discovery.hh>
 // others
@@ -14,6 +14,7 @@
 using namespace virtdb;
 using namespace virtdb::apps;
 using namespace virtdb::interface;
+using namespace virtdb::connector;
 
 namespace
 {
@@ -59,6 +60,12 @@ int main(int argc, char ** argv)
     {
       THROW_("invalid number of arguments");
     }
+    
+    endpoint_server     ep_srv(argv[1]);
+    endpoint_client     ep_clnt(ep_srv.local(), "svc_config");
+    log_record_client   log_clnt(ep_clnt);
+    config_client       cfg_clnt(ep_clnt);
+    config_server       cfg_srv(cfg_clnt);
     
     logger::process_info::set_app_name("svc_config");
     
