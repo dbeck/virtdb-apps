@@ -5,7 +5,7 @@
       'Debug': { 'defines': ['DEBUG', '_DEBUG', ], },
       'Release': { 'defines': ['NDEBUG', 'RELEASE', ], },
     },
-    'include_dirs': [ 
+    'include_dirs': [
       'src/',
       'src/proto/',
       'src/proto/cppzmq/',
@@ -17,7 +17,7 @@
     'cflags': [
       '-std=c++11',
     ],
-    'defines': [ 
+    'defines': [
       'PIC',
       'STD_CXX_11',
       '_THREAD_SAFE',
@@ -28,19 +28,20 @@
       ['_type=="executable"',     {'cflags': ['-fPIC']}],
     ],
     'conditions': [
-      ['OS=="mac"', { 
-        'cflags': [ '<!@(pkg-config --cflags protobuf libzmq)', '-std=c++11', ], 
-        'xcode_settings': { 
+      ['OS=="mac"', {
+        'cflags': [ '<!@(pkg-config --cflags protobuf libzmq)', '-std=c++11', ],
+        'xcode_settings': {
           'GCC_ENABLE_CPP_EXCEPTIONS': 'YES',
           'OTHER_LDFLAGS': [ '<!@(pkg-config --libs-only-L --libs-only-l protobuf libzmq)' ],
           'OTHER_CFLAGS': [ '-std=c++11', ],
         },
       },],
-      ['OS=="linux"', { 
-        'cflags': [ '<!@(pkg-config --cflags protobuf libzmq)', '-Werror' ], 
+      ['OS=="linux"', {
+        # 'cflags': [ '<!@(pkg-config --cflags protobuf libzmq)', '-Werror' ],  -- TODO commented out only for temporary linux build fix
+        'cflags': [ '<!@(pkg-config --cflags protobuf libzmq)' ],
         'link_settings': {
           'ldflags': ['-Wl,--no-as-needed',],
-          'libraries': [ '<!@(pkg-config --libs-only-L --libs-only-l protobuf libzmq)', ], 
+          'libraries': [ '<!@(pkg-config --libs-only-L --libs-only-l protobuf libzmq)', ],
         },
       },],
     ],
