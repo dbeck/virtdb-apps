@@ -22,13 +22,13 @@ namespace
   int usage(const EXC & exc)
   {
     std::cerr << "Exception: " << exc.what() << "\n"
-    << "\n"
-    << "Usage: svc_config_svc_sample <Request-Reply-EndPoint> <Pub-Sub-Endpoint>\n"
-    << "\n"
-    << " endpoint examples: \n"
-    << "  \"ipc:///tmp/svc_config-endpoint\"\n"
-    << "  \"tcp://localhost:65001\"\n"
-    << "  \"tcp://*:65001\"\n\n";
+              << "\n"
+              << "Usage: svc_config_svc_sample <Request-Reply-EndPoint> <Pub-Sub-Endpoint>\n"
+              << "\n"
+              << " endpoint examples: \n"
+              << "  \"ipc:///tmp/svc_config-endpoint\"\n"
+              << "  \"tcp://localhost:65001\"\n"
+              << "  \"tcp://*:65001\"\n\n";
     return 100;
   }
   
@@ -173,8 +173,10 @@ int main(int argc, char ** argv)
     if( svc_config_address_count > 0 )
       endpoints.insert(self_endpoint);
     
+    /*
     for( auto const & ep : endpoints )
       std::cerr << "configured endpoint: \n" << ep.DebugString() << "\n";
+     */
     
     // loop, read endpoint requests
     size_t nth_request = 0;
@@ -202,7 +204,15 @@ int main(int argc, char ** argv)
               // ignore endpoints with no connections
               if( request.endpoints(i).connections_size() > 0 )
               {
+                // remove old endpoints if exists
+                auto it = endpoints.find(request.endpoints(i));
+                if( it != endpoints.end() )
+                  endpoints.erase(it);
+
+                // insert endpoint
                 endpoints.insert(request.endpoints(i));
+                
+                // take special care for log endpoints
                 auto ep_data = request.endpoints(i);
                 if( ep_data.svctype() == pb::ServiceType::LOG_RECORD )
                   diag_eps.insert(ep_data);
@@ -244,8 +254,25 @@ int main(int argc, char ** argv)
           bool serialzied = reply_data->SerializeToArray(reply_msg.get(),reply_size);
           if( serialzied )
           {
+            // send reply
             req_rep_socket.send(reply_msg.get(), reply_size);
-            pub_sub_socket.send(reply_msg.get(), reply_size);
+            
+            // publish new messages one by one
+            for( int i=0; i<request.endpoints_size(); ++i )
+            {
+              auto ep = request.endpoints(i);
+              if( ep.svctype() != pb::ServiceType::NONE &&
+                  ep.connections_size() > 0 )
+              {
+                pb::Endpoint publish_ep;
+                publish_ep.add_endpoints()->MergeFrom(request.endpoints(i));
+                std::ostringstream os;
+                os << ep.svctype() << '.' << ep.name();
+                std::string subscription{os.str()};
+                pub_sub_socket.send(subscription.c_str(), subscription.length(), ZMQ_SNDMORE);
+                pub_sub_socket.send(message.data(), message.size());
+              }
+            }
           }
           else
           {

@@ -409,7 +409,6 @@ int main(int argc, char ** argv)
         if( !message.data() || !message.size())
           continue;
         
-        std::cerr << "Log message arrived\n";
         bool parsed = rec.ParseFromArray(message.data(), message.size());
         if( !parsed )
           continue;
