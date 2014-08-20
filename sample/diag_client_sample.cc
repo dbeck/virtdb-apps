@@ -1,10 +1,14 @@
 
 #include <logger.hh>
-#include <util/exception.hh>
+#include <util.hh>
+#include <connector.hh>
 #include <zmq.hpp>
 #include <memory>
 #include <chrono>
 #include <thread>
+
+using namespace virtdb;
+using namespace virtdb::connector;
 
 namespace
 {
@@ -43,7 +47,7 @@ namespace
 
 int main(int argc, char ** argv)
 {
-  using virtdb::logger::log_sink;
+  using logger::log_sink;
   
   try
   {
@@ -56,7 +60,7 @@ int main(int argc, char ** argv)
     log_record_client   log_clnt(ep_clnt);
 
     //
-    virtdb::logger::process_info::set_app_name("diag_client");
+    logger::process_info::set_app_name("diag_client");
     
     // initialize 0MQ and logger
     zmq::context_t context(1);
