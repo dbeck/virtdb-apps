@@ -1,0 +1,29 @@
+{
+  "name": "db-config",
+  "version": "0.0.0",
+  "description": "Postgres configurator service for VirtDB",
+  "main": "out/index.js",
+  "private": true,
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/starschema/virtdb-apps"
+  },
+  "author": "",
+  "license": "LGPL v3",
+  "bugs": {
+    "url": "https://github.com/starschema/virtdb-apps/issues"
+  },
+  "homepage": "https://github.com/starschema/virtdb-apps",
+  "devDependencies": {
+    "gulp": "3.8.7"
+  },
+  "dependencies": {
+    "loglevel": "1.0.0",
+    "node-protobuf": "1.2.0",
+    "pg": "3.4.1",
+    "zmq": "2.7.0"
+  }
+}
