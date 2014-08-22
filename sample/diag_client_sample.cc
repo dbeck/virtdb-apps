@@ -59,22 +59,19 @@ int main(int argc, char ** argv)
     endpoint_client     ep_clnt(argv[1], "diag_client");
     log_record_client   log_clnt(ep_clnt);
 
-    //
-    logger::process_info::set_app_name("diag_client");
+    for( int i=0;i<4;++i )
+    {
+      // give a chance to log sender to initialize
+      std::this_thread::sleep_for(std::chrono::milliseconds(2000));
     
-    // initialize 0MQ and logger
-    zmq::context_t context(1);
-    std::shared_ptr<zmq::socket_t> socket_sptr(new zmq::socket_t(context,ZMQ_PUSH));
-    socket_sptr->connect(argv[1]);
-    std::shared_ptr<log_sink> sink_sptr(new log_sink(socket_sptr));
+      // tests
+      log_info_test();
+      log_error_test();
+      log_scoped_test();
+    }
     
-    // tests
-    log_info_test();
-    log_error_test();
-    log_scoped_test();
+    LOG_INFO("exiting");
     
-    // give a chance to log sender before we quit
-    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
   }
   catch (const std::exception & e)
   {

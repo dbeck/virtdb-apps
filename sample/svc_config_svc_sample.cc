@@ -4,15 +4,12 @@
 #include <logger.hh>
 #include <util.hh>
 #include <connector.hh>
-// apps
-#include <discovery.hh>
 // others
 #include <zmq.hpp>
 #include <map>
 #include <set>
 
 using namespace virtdb;
-using namespace virtdb::apps;
 using namespace virtdb::interface;
 using namespace virtdb::connector;
 
@@ -47,6 +44,9 @@ int main(int argc, char ** argv)
     endpoint_server     ep_srv(argv[1],"svc_config");
     endpoint_client     ep_clnt(ep_srv.local(), ep_srv.name());
     log_record_client   log_clnt(ep_clnt);
+    // TODO : config services
+    config_client       cfg_clnt(ep_clnt);
+    config_server       cfg_srv(cfg_clnt);
     
     while( true )
     {
@@ -54,10 +54,6 @@ int main(int argc, char ** argv)
       LOG_INFO("alive");
     }
 
-    /* TODO
-    config_client       cfg_clnt(ep_clnt);
-    config_server       cfg_srv(cfg_clnt);
-     */
   }
   catch (const std::exception & e)
   {
