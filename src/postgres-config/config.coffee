@@ -1,5 +1,5 @@
-log = require('loglevel');
-log.setLevel('debug')
+log = require 'loglevel'
+log.setLevel 'debug'
 
 class Config
     @Const:
