@@ -3,7 +3,7 @@ csv     = require("csv")            # csv parsing
 glob    = require("glob")           # case insensitive file search
 FieldData = require("./fieldData")
 CONST = require("./config").Const
-log = require('loglevel');
+log = require('loglevel')
 async = require("async")
 
 class MetaDataService
@@ -16,17 +16,17 @@ class MetaDataService
         @schema = request.Schema
         @regexp = request.Name
 
-    process: () =>
+    process: =>
         #
         # Case-insensitive file lookup
         @reply.Tables = []
-        glob(@schema+"/*.csv", { nocase: true }, (err, files) =>
+        glob(@schema + "/*.csv", { nocase: true }, (err, files) =>
             async.each(files,
                 (file, callback) =>
                     # # Gathering output per column
                     # # CSV module objects
                     transformer = null
-                    table_name = file.substring(file.lastIndexOf("data/")+"data/".length,file.lastIndexOf(".csv"));
+                    table_name = file.substring(file.lastIndexOf("data/") + "data/".length, file.lastIndexOf(".csv"))
                     if not table_name.match @regexp
                         callback()
                         return
@@ -61,11 +61,11 @@ class MetaDataService
                     parser = csv.parse(
                         columns: null
                     )
-                    fs.createReadStream(file).pipe(parser).pipe(transformer).on 'end', () =>
+                    fs.createReadStream(file).pipe(parser).pipe(transformer).on 'end', =>
                         console.timeEnd current_table.Name
                         # log.debug "end of ", file
                         callback()
-                , () =>
+                , =>
                     @sendData @reply
             )
         )

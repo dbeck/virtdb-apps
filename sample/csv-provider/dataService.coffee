@@ -21,7 +21,7 @@ class DataService
         else
             @limit = CONST.MAX_CHUNK_SIZE + 1
 
-    fill_column_header = (query, field) =>
+    fill_column_header = (query, field) ->
         {} =
             QueryId: query.QueryId
             Name: field.Name
