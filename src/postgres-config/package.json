@@ -21,9 +21,11 @@
     "gulp": "3.8.7"
   },
   "dependencies": {
+    "l": "0.0.1",
     "loglevel": "1.0.0",
     "node-protobuf": "1.2.0",
     "pg": "3.4.1",
+    "source-map-support": "0.2.7",
     "zmq": "2.7.0"
   }
 }

@@ -3,6 +3,7 @@ protocol    = require "./protocol"
 log         = require 'loglevel'
 pg          = require 'pg'
 conString   = "postgres://localhost/vagrant"
+require('source-map-support').install();
 
 protocol.on CONST.DB_CONFIG.MESSAGE, (data) ->
     for table in data.Tables
@@ -54,7 +55,7 @@ protocol.on CONST.DB_CONFIG.MESSAGE, (data) ->
                         for field in table.Fields
                             q_create_table += "\"" + field.Name + "\"" + " VARCHAR, "
                         q_create_table = q_create_table.substring(0, q_create_table.length - 2)
-                        q_create_table += ") server " + data.Type + "_srv"
+                        q_create_table += ") server " + data.Name + "_srv"
                         client.query q_create_table, (err, result) ->
                             if err
                                 log.error err
