@@ -1,8 +1,8 @@
 CONST       = require("./config").Const
-protocol    = require("./protocol")
-log         = require('loglevel');
-pg          = require('pg');
-conString   = "postgres://localhost/vagrant";
+protocol    = require "./protocol"
+log         = require 'loglevel'
+pg          = require 'pg'
+conString   = "postgres://localhost/vagrant"
 
 protocol.on CONST.DB_CONFIG.MESSAGE, (data) ->
     for table in data.Tables
@@ -18,7 +18,7 @@ protocol.on CONST.DB_CONFIG.MESSAGE, (data) ->
     # drop foreign table
     # create foreign table
 
-    pg.connect conString, (err, client, done) =>
+    pg.connect conString, (err, client, done) ->
         if err
             log.error err
             return
@@ -53,8 +53,8 @@ protocol.on CONST.DB_CONFIG.MESSAGE, (data) ->
                         log.debug table.Fields[0].Name
                         for field in table.Fields
                             q_create_table += "\"" + field.Name + "\"" + " VARCHAR, "
-                        q_create_table = q_create_table.substring(0, q_create_table.length - 2);
-                        q_create_table += ") server " + data.Type+"_srv"
+                        q_create_table = q_create_table.substring(0, q_create_table.length - 2)
+                        q_create_table += ") server " + data.Type + "_srv"
                         client.query q_create_table, (err, result) ->
                             if err
                                 log.error err
