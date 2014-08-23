@@ -279,62 +279,39 @@ int main(int argc, char ** argv)
     // stop listening on IP_DISCOVERY endpoint data
     ep_clnt.remove_watches(pb::ServiceType::IP_DISCOVERY);
     
-    // determine my ip
-    std::string my_ip;
-    {
-      my_ip = ip_discovery_client::get_ip(ip_discovery_data.get());
-      if( my_ip.empty() )
-      {
-        net::string_vector my_ips = util::net::get_own_ips();
-        if( !my_ips.empty() )
-          my_ip = my_ips[0];
-      }
-      if( my_ip.empty() )
-      {
-        THROW_("cannot find a valid IP address");
-      }
-    }
+    // add up my ips and discovery ip
+    net::string_vector my_ips = util::net::get_own_ips();
+    util::zmq_socket_wrapper::host_set hosts{my_ips.begin(), my_ips.end()};
+    hosts.insert(ip_discovery_client::get_ip(ip_discovery_data.get()));
 
     // setting up our own endpoint
     zmq::context_t context(1);
-    zmq::socket_t diag_socket(context, ZMQ_PULL);
-    std::string diag_service_address;
+    util::zmq_socket_wrapper diag_socket(context, ZMQ_PULL);
+    pb::EndpointData diag_ep_data;
 
     {
-      pb::EndpointData ep_data;
-      ep_data.set_name(ep_clnt.name());
-      ep_data.set_svctype(pb::ServiceType::LOG_RECORD);
+      diag_ep_data.set_name(ep_clnt.name());
+      diag_ep_data.set_svctype(pb::ServiceType::LOG_RECORD);
 
-      std::ostringstream os;
-      os << "tcp://" << my_ip << ":*";
-      diag_socket.bind(os.str().c_str());
-
-      {
-        // TODO: refactor to separate class ...
-        char last_zmq_endpoint[512];
-        last_zmq_endpoint[0] = 0;
-        size_t opt_size = sizeof(last_zmq_endpoint);
-        diag_socket.getsockopt(ZMQ_LAST_ENDPOINT, last_zmq_endpoint, &opt_size);
-        last_zmq_endpoint[sizeof(last_zmq_endpoint)-1] = 0;
-        
-        auto conn = ep_data.add_connections();
-        conn->set_type(pb::ConnectionType::PUSH_PULL);
-        diag_service_address = last_zmq_endpoint;
-        *(conn->add_address()) = last_zmq_endpoint;
-      }
+      diag_socket.batch_tcp_bind(hosts);
+      auto conn = diag_ep_data.add_connections();
+      conn->set_type(pb::ConnectionType::PUSH_PULL);
       
-      ep_clnt.register_endpoint(ep_data);
+      for( auto const & ep : diag_socket.endpoints() )
+        *(conn->add_address()) = ep;
+      
+      ep_clnt.register_endpoint(diag_ep_data);
     }
     
     log_data log_static_data;
-    std::cerr << "Diag service started at: " << diag_service_address << "\n";
+    std::cerr << "Diag service started at: " << diag_ep_data.DebugString() << "\n";
     
     while( true )
     {
       try
       {
         zmq::message_t message;
-        if( !diag_socket.recv(&message) )
+        if( !diag_socket.get().recv(&message) )
           continue;
         
         LogRecord rec;
