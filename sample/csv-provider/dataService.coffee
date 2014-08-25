@@ -3,7 +3,7 @@ csv     = require("csv")            # csv parsing
 glob    = require("glob")           # case insensitive file search
 FieldData = require("./fieldData")
 CONST = require("./config").Const
-log = require('loglevel');
+log = require('loglevel')
 
 class DataService
     limit: 0
@@ -21,7 +21,7 @@ class DataService
         else
             @limit = CONST.MAX_CHUNK_SIZE + 1
 
-    fill_column_header = (query, field) =>
+    fill_column_header = (query, field) ->
         {} =
             QueryId: query.QueryId
             Name: field.Name
@@ -49,7 +49,7 @@ class DataService
         for field in @fields
             @out_data[field.Name].Data.push data[field.Name]
             if @cursor == CONST.MAX_CMAX_CHUNK_SIZE
-                @out_data[field.Name].EndOfData = false;
+                @out_data[field.Name].EndOfData = false
                 @sendData @out_data[field.Name]
                 @out_data[field.Name].Data.reset()
         if @cursor == CONST.MAX_CHUNK_SIZE
@@ -63,10 +63,10 @@ class DataService
             return
         for field in @fields
             # if out_data[field.Name].Data.length() >= 1
-            @out_data[field.Name].EndOfData = true;
+            @out_data[field.Name].EndOfData = true
             @sendData @out_data[field.Name]
 
-    process: () =>
+    process: =>
         # Gathering output per column
         # CSV module objects
         @transformer = csv.transform @on_record, @on_end

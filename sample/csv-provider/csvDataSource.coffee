@@ -3,19 +3,19 @@
 # Expects Query from client
 #
 
-require('source-map-support').install();
+require('source-map-support').install()
 
-logger  = require("./logger")
-protocol = require("./protocol")
+logger  = require "./logger"
+protocol = require "./protocol"
 CONST = require("./config").Const
-log = require('loglevel');
-DataService = require('./dataService');
-MetaDataService = require('./metaDataService')
+log = require 'loglevel'
+DataService = require './dataService'
+MetaDataService = require './metaDataService'
 
 sendData = (column) ->
     protocol.emit CONST.DATA.MESSAGE, column
     log.debug column.Data.FieldName, " - length: ", column.Data.length(), " last value: ",
-            column.Data.get(column.Data.length() - 1)
+            column.Data.get column.Data.length() - 1
 
 sendMeta = (data) ->
     protocol.emit CONST.METADATA.REPLY.MESSAGE, data

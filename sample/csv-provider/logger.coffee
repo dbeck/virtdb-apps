@@ -1,4 +1,4 @@
-exports.dumpExpression = (expression, indent) =>
+exports.dumpExpression = (expression, indent) ->
     ret = ""
     ret += indent + "Operand: " + expression.Operand + "\n"
     if expression.Composite
@@ -12,7 +12,7 @@ exports.dumpExpression = (expression, indent) =>
         ret += indent + "Variable: " + expression.Simple.Variable + "\n"
         ret += indent + "Value: " + expression.Simple.Value + "\n"
 
-exports.dumpQuery = (query) =>
+exports.dumpQuery = (query) ->
     ret = ""
     ret += "Query:" + "\n"
     indent = "  "

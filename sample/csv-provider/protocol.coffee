@@ -1,14 +1,14 @@
 CONST = require("./config").Const
 
-zmq             = require("zmq")            # messaging
-EventEmitter    = require('events').EventEmitter;
-fs              = require("fs")             # reading data descriptor and CSV files
-p               = require("node-protobuf")  # serialization
+zmq             = require("zmq")
+EventEmitter    = require('events').EventEmitter
+fs              = require("fs")
+p               = require("node-protobuf")
 proto_data      = new p(fs.readFileSync(CONST.DATA.PROTO_FILE))
 proto_meta      = new p(fs.readFileSync(CONST.METADATA.PROTO_FILE))
-log             = require('loglevel');
+log             = require('loglevel')
 
-module.exports = new EventEmitter();
+module.exports = new EventEmitter()
 
 #
 # Query socket: receives queries
@@ -23,7 +23,7 @@ query_socket.bind CONST.QUERY.URL, (err) ->
 
 query_socket.on "message", (request) ->
     newData = proto_data.parse(request, "virtdb.interface.pb.Query")
-    module.exports.emit CONST.QUERY.MESSAGE, newData;
+    module.exports.emit CONST.QUERY.MESSAGE, newData
     return
 
 #
@@ -40,7 +40,7 @@ metadata_socket.bind CONST.METADATA.URL, (err) ->
 metadata_socket.on "message", (request) ->
     try
         newData = proto_meta.parse(request, "virtdb.interface.pb.MetaDataRequest")
-        module.exports.emit CONST.METADATA.MESSAGE, newData;
+        module.exports.emit CONST.METADATA.MESSAGE, newData
     catch ex
         log.error ex
         metadata_socket.send 'err'
@@ -64,8 +64,9 @@ publisher_socket.bind CONST.DATA.URL, (err) ->
     return
 
 module.exports.on CONST.DATA.MESSAGE, (column_data) ->
-    buf = proto_data.serialize(column_data, "virtdb.interface.pb.Column")
-    publisher_socket.send(buf)
+    buf = proto_data.serialize column_data, "virtdb.interface.pb.Column"
+    publisher_socket.send column_data.QueryId, zmq.ZMQ_SNDMORE
+    publisher_socket.send buf
     log.debug "Column data sent: ", column_data.Name, "(", column_data.Data.length() ,")"
 
 
@@ -73,7 +74,7 @@ module.exports.on CONST.DATA.MESSAGE, (column_data) ->
 #
 # On exit close the sockets
 #
-module.exports.on CONST.CLOSE_MESSAGE, () ->
+module.exports.on CONST.CLOSE_MESSAGE, ->
     metadata_socket.close()
     query_socket.close()
     publisher_socket.close()

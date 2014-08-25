@@ -1,13 +1,13 @@
 CONST = require("./config").Const
 
-zmq             = require("zmq")            # messaging
-EventEmitter    = require('events').EventEmitter;
-fs              = require("fs")             # reading data descriptor and CSV files
-pb              = require("node-protobuf")  # serialization
-proto_config    = new pb fs.readFileSync CONST.DB_CONFIG.PROTO_FILE
-log             = require('loglevel');
+log              = require 'loglevel'
+zmq              = require "zmq"
+fs               = require "fs"
+protocol_buffers = require "node-protobuf"
+EventEmitter     = require('events').EventEmitter
+proto_config     = new protocol_buffers(fs.readFileSync(CONST.DB_CONFIG.PROTO_FILE))
 
-module.exports = new EventEmitter();
+module.exports = new EventEmitter()
 
 #
 # DB Config: receives queries
@@ -22,7 +22,7 @@ config_socket.bind CONST.DB_CONFIG.URL, (err) ->
 
 config_socket.on "message", (request) ->
     newData = proto_config.parse(request, "virtdb.interface.pb.ServerConfig")
-    module.exports.emit CONST.DB_CONFIG.MESSAGE, newData;
+    module.exports.emit CONST.DB_CONFIG.MESSAGE, newData
     return
 
 

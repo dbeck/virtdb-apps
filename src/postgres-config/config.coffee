@@ -1,5 +1,5 @@
-log = require('loglevel');
-log.setLevel('debug')
+log = require 'loglevel'
+log.setLevel 'debug'
 
 class Config
     @Const:
@@ -11,5 +11,7 @@ class Config
             PROTO_FILE: "../../src/proto/meta_data.pb.desc"
         MAX_CHUNK_SIZE: 100000
         CLOSE_MESSAGE: "close"
+    @Error:
+        Duplicate_Object: '42710'
 
 module.exports = Config

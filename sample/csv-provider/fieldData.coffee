@@ -31,7 +31,7 @@ class FieldData
     push: (value) =>
         @IsNull.push true
 
-    reset: () =>
+    reset: =>
         @IsNull = new Array()
 
 class StringFieldData extends FieldData
@@ -43,7 +43,7 @@ class StringFieldData extends FieldData
         @StringValue.push value
         @IsNull.push (value == "")
 
-    length: () =>
+    length: =>
         @StringValue.length
 
     get: (index) =>
@@ -52,7 +52,7 @@ class StringFieldData extends FieldData
         else
             null
 
-    reset: () =>
+    reset: =>
         super
         @StringValue = new Array()
 
@@ -66,7 +66,7 @@ class Int32FieldData extends FieldData
         @Int32Value.push 0
         super
 
-    length: () =>
+    length: =>
         @Int32Value.length
 
     get: (index) =>
@@ -85,7 +85,7 @@ class Int64FieldData extends FieldData
         @Int64Value.push 0
         super
 
-    length: () =>
+    length: =>
         @Int64Value.length
 
     get: (index) =>
@@ -104,7 +104,7 @@ class UInt32FieldData extends FieldData
         @UInt32Value.push 0
         super
 
-    length: () =>
+    length: =>
         @UInt32Value.length
 
     get: (index) =>
@@ -123,7 +123,7 @@ class UInt64FieldData extends FieldData
         @UInt64Value.push 0
         super
 
-    length: () =>
+    length: =>
         @UInt64Value.length
 
     get: (index) =>
@@ -142,7 +142,7 @@ class DoubleFieldData extends FieldData
         @DoubleValue.push 0
         super
 
-    length: () =>
+    length: =>
         @DoubleValue.length
 
     get: (index) =>
@@ -161,7 +161,7 @@ class FloatFieldData extends FieldData
         @FloatValue.push 0
         super
 
-    length: () =>
+    length: =>
         @FloatValue.length
 
     get: (index) =>
@@ -180,7 +180,7 @@ class BoolFieldData extends FieldData
         @BoolValue.push false
         super
 
-    length: () =>
+    length: =>
         @BoolValue.length
 
     get: (index) =>
@@ -199,7 +199,7 @@ class BytesFieldData extends FieldData
         @BytesValue.push 0
         super
 
-    length: () =>
+    length: =>
         @BytesValue.length
 
     get: (index) =>
