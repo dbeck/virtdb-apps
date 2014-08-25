@@ -7,8 +7,9 @@
     },
     'include_dirs': [
       'src/',
-      'src/proto/',
-      'src/proto/cppzmq/',
+      'src/common/',
+      'src/common/cppzmq/',
+      'src/common/proto/',
       'install/include/node/',
       '/usr/local/include/',
       '/usr/include/',
@@ -48,27 +49,21 @@
   },
   'targets' : [
     {
-      'target_name':       'app_helpers',
-      'type':              'static_library',
-      'dependencies':      [ 'src/proto/proto.gyp:proto', ],
-      'sources':           [ 'src/discovery.cc', 'src/discovery.hh' ],
-    },
-    {
       'target_name':       'diag_svc_sample',
       'type':              'executable',
-      'dependencies':      [ 'app_helpers', 'src/proto/proto.gyp:proto', ],
+      'dependencies':      [ 'src/common/common.gyp:common', ],
       'sources':           [ 'sample/diag_svc_sample.cc', ],
     },
     {
       'target_name':       'svc_config_svc_sample',
       'type':              'executable',
-      'dependencies':      [ 'app_helpers', 'src/proto/proto.gyp:proto', ],
+      'dependencies':      [ 'src/common/common.gyp:common', ],
       'sources':           [ 'sample/svc_config_svc_sample.cc', ],
     },
     {
       'target_name':       'diag_client_sample',
       'type':              'executable',
-      'dependencies':      [ 'app_helpers', 'src/proto/proto.gyp:proto', ],
+      'dependencies':      [ 'src/common/common.gyp:common', ],
       'sources':           [ 'sample/diag_client_sample.cc', ],
     },
   ],
