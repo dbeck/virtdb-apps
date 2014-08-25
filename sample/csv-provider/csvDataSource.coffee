@@ -11,6 +11,7 @@ CONST = require("./config").Const
 log = require 'loglevel'
 DataService = require './dataService'
 MetaDataService = require './metaDataService'
+VirtDB = require './virtdb'
 
 sendData = (column) ->
     protocol.emit CONST.DATA.MESSAGE, column
@@ -19,6 +20,7 @@ sendData = (column) ->
 
 sendMeta = (data) ->
     protocol.emit CONST.METADATA.REPLY.MESSAGE, data
+    # virtdb.sendMetaData data
 
 protocol.on CONST.QUERY.MESSAGE, (query_data) ->
     log.info "Query arrived: ", query_data.Table
@@ -34,3 +36,13 @@ protocol.on CONST.METADATA.MESSAGE, (request) ->
 process.on "SIGINT", ->
     protocol.emit CONST.CLOSE_MESSAGE
     return
+
+try
+    virtdb = new VirtDB "csv-provider", "tcp://localhost:65006"
+
+    virtdb.handleMetaData (request) ->
+        log.info "Metadata request arrived: ", request.Name
+        new MetaDataService(request, sendMeta).process()
+        return
+catch e
+    console.log e
