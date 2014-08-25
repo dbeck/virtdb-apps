@@ -5,7 +5,7 @@ fs          = require 'fs'
 udp         = require 'dgram'
 async       = require "async"
 
-proto_service_config = new protobuf(fs.readFileSync('../../src/proto/svc_config.pb.desc'))
+proto_service_config = new protobuf(fs.readFileSync('../../src/common/proto/svc_config.pb.desc'))
 
 class VirtDB
     svcConfigSocket: null   # Communicating endpoints and config
