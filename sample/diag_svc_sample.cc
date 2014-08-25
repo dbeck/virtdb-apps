@@ -3,19 +3,18 @@
 #include <svc_config.pb.h>
 #include <diag.pb.h>
 #include <logger.hh>
-#include <util/exception.hh>
-#include <util/net.hh>
-// apps
-#include <discovery.hh>
+#include <util.hh>
+#include <connector.hh>
 // others
 #include <zmq.hpp>
 #include <iostream>
 #include <map>
+#include <future>
 
 using namespace virtdb;
-using namespace virtdb::apps;
 using namespace virtdb::interface;
 using namespace virtdb::util;
+using namespace virtdb::connector;
 
 namespace
 {
@@ -31,35 +30,6 @@ namespace
               << "  \"tcp://localhost:65001\"\n\n";
     return 100;
   }
-  
-  struct compare_process_info
-  {
-    bool operator()(const virtdb::interface::pb::ProcessInfo & lhs,
-                    const virtdb::interface::pb::ProcessInfo & rhs) const
-    {
-      if( lhs.startdate() < rhs.startdate() )
-        return true;
-      else if( lhs.startdate() > rhs.startdate() )
-        return false;
-      
-      if( lhs.starttime() < rhs.starttime() )
-        return true;
-      else if( lhs.starttime() > rhs.starttime() )
-        return false;
-      
-      if( lhs.pid() < rhs.pid() )
-        return true;
-      else if( lhs.pid() > rhs.pid() )
-        return false;
-      
-      if( lhs.random() < rhs.random() )
-        return true;
-      else if( lhs.random() > rhs.random() )
-        return false;
-      else
-        return false;
-    }
-  };
   
   struct log_data
   {
@@ -118,6 +88,7 @@ namespace
     {
       switch( var.type() )
       {
+          // TODO : handle array parameters ...
         case pb::Kind::BOOL:   std::cout << (var.boolvalue(0)?"true":"false"); break;
         case pb::Kind::FLOAT:  std::cout << var.floatvalue(0); break;
         case pb::Kind::DOUBLE: std::cout << var.doublevalue(0); break;
@@ -268,141 +239,85 @@ int main(int argc, char ** argv)
       THROW_("invalid number of arguments");
     }
     
-    logger::process_info::set_app_name("diag_svc");
-
-    zmq::context_t context(2);
-    zmq::socket_t ep_req_socket(context,ZMQ_REQ);
-    zmq::socket_t diag_socket(context, ZMQ_PULL);
-    ep_req_socket.connect(argv[1]);
-    std::string diag_service_address;
+    endpoint_client     ep_clnt(argv[1], "diag_svc");
+    // TODO : config_client       cfg_clnt(ep_clnt);
+    // TODO : log_record_server   log_svr(cfg_clnt);
     
-    // register ourselves
+    std::promise<ip_discovery_client::endpoint_vector> ip_discovery_promise;
+    std::future<ip_discovery_client::endpoint_vector> ip_discovery_data{ip_discovery_promise.get_future()};
+    
+    ep_clnt.watch(pb::ServiceType::IP_DISCOVERY, [&ip_discovery_promise](const pb::EndpointData & ep)
     {
-      pb::Endpoint diag_ep;
-      auto ep_data = diag_ep.add_endpoints();
-      ep_data->set_name("diag_svc");
-      ep_data->set_svctype(pb::ServiceType::LOG_RECORD);
-      int ep_size = diag_ep.ByteSize();
-      
-      if( ep_size > 0 )
+      ip_discovery_client::endpoint_vector result;
+      for( int i=0; i<ep.connections_size(); ++i )
       {
-        std::unique_ptr<unsigned char[]> msg_data{new unsigned char[ep_size]};
-        bool serialized = diag_ep.SerializeToArray(msg_data.get(), ep_size);
-        if( !serialized )
+        auto conn = ep.connections(i);
+        if( conn.type() == pb::ConnectionType::RAW_UDP )
         {
-          THROW_("Couldn't serialize our own endpoint data");
-        }
-        ep_req_socket.send( msg_data.get(), ep_size );
-        zmq::message_t msg;
-        ep_req_socket.recv(&msg);
-        
-        if( !msg.data() || !msg.size() )
-        {
-          THROW_("invalid Endpoint message received");
-        }
-        
-        pb::Endpoint peers;
-        serialized = peers.ParseFromArray(msg.data(), msg.size());
-        if( !serialized )
-        {
-          THROW_("couldn't process peer Endpoints");
-        }
-        
-        discovery::endpoint_vector ep_strings;
-        for( int i=0; i<peers.endpoints_size(); ++i )
-        {
-          auto ep = peers.endpoints(i);
-          if( ep.svctype() == pb::ServiceType::IP_DISCOVERY )
+          for( int ii=0; ii<conn.address_size(); ++ii )
           {
-            for( int ii=0; ii<ep.connections_size(); ++ii )
-            {
-              auto conn = ep.connections(ii);
-              if( conn.type() == pb::ConnectionType::RAW_UDP )
-              {
-                for( int iii=0; iii<conn.address_size(); ++iii )
-                {
-                  ep_strings.push_back(conn.address(iii));
-                }
-              }
-            }
+            result.push_back(conn.address(ii));
           }
         }
-        
-        std::string my_ip = discovery_client::get_ip(ep_strings);
-        if( my_ip.empty() )
-        {
-          net::string_vector my_ips = util::net::get_own_ips();
-          if( !my_ips.empty() )
-            my_ip = my_ips[0];
-        }
-        if( my_ip.empty() )
-        {
-          THROW_("cannot find a valid IP address");
-        }
-        
-        std::ostringstream os;
-        os << "tcp://" << my_ip << ":*";
-        diag_socket.bind(os.str().c_str());
-        
-        {
-          // TODO: refactor to separate class ...
-          char last_zmq_endpoint[512];
-          last_zmq_endpoint[0] = 0;
-          size_t opt_size = sizeof(last_zmq_endpoint);
-          diag_socket.getsockopt(ZMQ_LAST_ENDPOINT, last_zmq_endpoint, &opt_size);
-          last_zmq_endpoint[sizeof(last_zmq_endpoint)-1] = 0;
-          
-          auto conn = ep_data->add_connections();
-          conn->set_type(pb::ConnectionType::PUSH_PULL);
-          diag_service_address = last_zmq_endpoint;
-          *(conn->add_address()) = last_zmq_endpoint;
-        }
       }
-      
-      // resend message
-      if( ep_data->connections_size() > 0 )
+      if( result.size() > 0 )
       {
-        ep_size = diag_ep.ByteSize();
-        std::unique_ptr<unsigned char[]> msg_data{new unsigned char[ep_size]};
-        bool serialized = diag_ep.SerializeToArray(msg_data.get(), ep_size);
-        if( !serialized )
-        {
-          THROW_("Couldn't serialize our own endpoint data");
-        }
-        ep_req_socket.send( msg_data.get(), ep_size );
-        zmq::message_t msg;
-        ep_req_socket.recv(&msg);
-        
-        if( !msg.data() || !msg.size() )
-        {
-          THROW_("invalid Endpoint message received");
-        }
-        
-        pb::Endpoint peers;
-        serialized = peers.ParseFromArray(msg.data(), msg.size());
-        if( !serialized )
-        {
-          THROW_("couldn't process peer Endpoints");
-        }
+        // we don't need more IP_DISCOVERY endpoints
+        ip_discovery_promise.set_value(result);
+        return false;
       }
+      else
+      {
+        // continue iterating over IP_DISCOVERY endpoints
+        return true;
+      }
+    });
+    
+    // wait till we have a valid IP_DISCOVERY endpoint data
+    ip_discovery_data.wait();
+    
+    // stop listening on IP_DISCOVERY endpoint data
+    ep_clnt.remove_watches(pb::ServiceType::IP_DISCOVERY);
+    
+    // add up my ips and discovery ip
+    net::string_vector my_ips = util::net::get_own_ips();
+    util::zmq_socket_wrapper::host_set hosts{my_ips.begin(), my_ips.end()};
+    hosts.insert(ip_discovery_client::get_ip(ip_discovery_data.get()));
+
+    // setting up our own endpoint
+    zmq::context_t context(1);
+    util::zmq_socket_wrapper diag_socket(context, ZMQ_PULL);
+    pb::EndpointData diag_ep_data;
+
+    {
+      diag_ep_data.set_name(ep_clnt.name());
+      diag_ep_data.set_svctype(pb::ServiceType::LOG_RECORD);
+
+      diag_socket.batch_tcp_bind(hosts);
+      auto conn = diag_ep_data.add_connections();
+      conn->set_type(pb::ConnectionType::PUSH_PULL);
+      
+      for( auto const & ep : diag_socket.endpoints() )
+        *(conn->add_address()) = ep;
+      
+      ep_clnt.register_endpoint(diag_ep_data);
     }
     
     log_data log_static_data;
-    std::cerr << "Diag service started at: " << diag_service_address << "\n";
+    std::cerr << "Diag service started at: " << diag_ep_data.DebugString() << "\n";
     
     while( true )
     {
       try
       {
         zmq::message_t message;
-        if( !diag_socket.recv(&message) )
+        if( !diag_socket.get().recv(&message) )
           continue;
         
         LogRecord rec;
         if( !message.data() || !message.size())
           continue;
         
-        std::cerr << "Log message arrived\n";
         bool parsed = rec.ParseFromArray(message.data(), message.size());
         if( !parsed )
           continue;
