@@ -56,7 +56,7 @@ process.stdin.on 'keypress', (ch, key) ->
         resetSocket()
         return
     if key.name == 'o'
-        new VirtDB "tcp://localhost:65001"
+        new VirtDB "tcp://localhost:65004"
 
 process.stdin.setRawMode true
 process.stdin.resume()

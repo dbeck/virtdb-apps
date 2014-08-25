@@ -12,15 +12,18 @@ class VirtDB
         # Connect to VirtDB Service Config
         @svcConfigSocket = zmq.socket('req')
         @svcConfigSocket.on "message", @_onEndpoint
-        @svcConfigSocke.connect @connectionString
+        @svcConfigSocket.connect @connectionString
         endpoint =
-            Endpoints = [
-                Name = "empty"
-                SvcType = "NONE"
+            Endpoints: [
+                Name: "empty"
+                SvcType: "NONE"
             ]
-        svcConfigSocket.send proto_service_config.serialize endpoint, "virtdb.interface.pb.Endpoint"
+        console.log "sending"
+        endpoint2 = {}
+        @svcConfigSocket.send proto_service_config.serialize endpoint, "virtdb.interface.pb.Endpoint"
 
-    _onEndpoint = (message) ->
+    _onEndpoint: (message) ->
+        console.log "received"
         console.log proto_service_config.parse message, "virtdb.interface.pb.Endpoint"
 
 module.exports = VirtDB
