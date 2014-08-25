@@ -7,6 +7,8 @@ keypress = require 'keypress'
 log             = require('loglevel');
 log.setLevel('debug')
 
+VirtDB = require "./virtdb"
+
 request_socket = null
 
 config_socket = zmq.socket("push")
@@ -53,6 +55,8 @@ process.stdin.on 'keypress', (ch, key) ->
     if key.name == 'c'
         resetSocket()
         return
+    if key.name == 'o'
+        new VirtDB "tcp://localhost:65001"
 
 process.stdin.setRawMode true
 process.stdin.resume()
