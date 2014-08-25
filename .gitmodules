@@ -2,3 +2,7 @@
 	path = src/node
 	url = https://github.com/starschema/node.git
 	branch = branch_from_tag_v0.10.29
+[submodule "src/common"]
+	path = src/common
+	url = https://github.com/starschema/virtdb-common.git
+	branch = master
