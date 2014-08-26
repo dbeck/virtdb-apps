@@ -44,7 +44,7 @@ int main(int argc, char ** argv)
     endpoint_server     ep_srv(argv[1],"svc_config");
     endpoint_client     ep_clnt(ep_srv.local_ep(), ep_srv.name());
     log_record_client   log_clnt(ep_clnt);
-    // TODO : config services
+    // TODO : config client
     config_client       cfg_clnt(ep_clnt);
     config_server       cfg_srv(cfg_clnt, ep_srv);
     
