@@ -5,21 +5,14 @@
 
 require('source-map-support').install()
 
-logger  = require "./logger"
-protocol = require "./protocol"
-CONST = require("./config").Const
 log = require 'loglevel'
 DataService = require './dataService'
 MetaDataService = require './metaDataService'
 VirtDB = require './virtdb'
-virtdb = null
 
-process.on "SIGINT", ->
-    protocol.emit CONST.CLOSE_MESSAGE
-    return
 
 try
-    virtdb = new VirtDB "csv-provider", "tcp://localhost:65001"
+    virtdb = new VirtDB("csv-provider", "tcp://localhost:65001")
 
     virtdb.onMetaDataRequest (request) ->
         log.debug "Metadata request arrived: ", request.Name
@@ -31,4 +24,9 @@ try
         new DataService(query, virtdb.sendColumn).process()
 
 catch e
+    virtdb?.close()
     console.log e
+
+process.on "SIGINT", ->
+    virtdb?.close()
+    return

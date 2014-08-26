@@ -2,7 +2,6 @@ fs      = require("fs")             # reading data descriptor and CSV files
 csv     = require("csv")            # csv parsing
 glob    = require("glob")           # case insensitive file search
 FieldData = require("./fieldData")
-CONST = require("./config").Const
 log = require('loglevel')
 async = require("async")
 
