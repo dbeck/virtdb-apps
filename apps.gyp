@@ -66,5 +66,11 @@
       'dependencies':      [ 'src/common/common.gyp:common', ],
       'sources':           [ 'sample/diag_client_sample.cc', ],
     },
+    {
+      'target_name':       'config_client_sample',
+      'type':              'executable',
+      'dependencies':      [ 'src/common/common.gyp:common', ],
+      'sources':           [ 'sample/config_client_sample.cc', ],
+    },
   ],
 }
