@@ -7,10 +7,12 @@ async       = require "async"
 
 proto_service_config = new protobuf(fs.readFileSync('../../src/common/proto/svc_config.pb.desc'))
 proto_meta           = new protobuf(fs.readFileSync('../../src/common/proto/meta_data.pb.desc'))
+proto_data           = new protobuf(fs.readFileSync('../../src/common/proto/data.pb.desc'))
 
 class Protocol
     @svcConfigScoket = null
     @metadata_socket = null
+    @column_socket = null
 
     @svcConfig = (connectionString, onEndpoint) ->
         @svcConfigSocket = zmq.socket('req')
@@ -24,24 +26,49 @@ class Protocol
     @sendEndpoint = (endpoint) ->
         @svcConfigSocket.send proto_service_config.serialize endpoint, 'virtdb.interface.pb.Endpoint'
 
-    @metaDataServer = (connectionString, onRequest, onBound) ->
+    @bindHandler = (socket, svcType, zmqType, onBound) ->
+        return (err) ->
+            zmqAddress = ""
+            if not err
+                zmqAddress = socket.getsockopt zmq.ZMQ_LAST_ENDPOINT
+            onBound err, svcType, zmqType, zmqAddress
+
+
+    @metaDataServer = (connectionString, onRequest, onBound) =>
         @metadata_socket = zmq.socket("rep")
         @metadata_socket.on "message", (request) ->
             try
                 newData = proto_meta.parse(request, "virtdb.interface.pb.MetaDataRequest")
                 onRequest newData
             catch ex
-                log.error ex
+                console.log ex
                 @metadata_socket.send 'err'
             return
-        @metadata_socket.bind connectionString, (err) =>
-            zmqAddress = ""
-            if not err
-                zmqAddress = @metadata_socket.getsockopt zmq.ZMQ_LAST_ENDPOINT
-            onBound(err, zmqAddress)
+        @metadata_socket.bind connectionString, @bindHandler(@metadata_socket, 'META_DATA', 'REQ_REP', onBound)
+
+    @queryServer = (connectionString, onQuery, onBound) =>
+        @query_socket = zmq.socket "pull"
+        @query_socket.on "message", (request) ->
+            try
+                query = proto_data.parse(request, "virtdb.interface.pb.Query")
+                onQuery query
+            catch ex
+                console.log ex
+            return
+        @query_socket.bind connectionString, @bindHandler(@query_socket, 'QUERY', 'PUSH_PULL', onBound)
+
+    @columnServer = (connectionString, callback, onBound) =>
+        @column_socket = zmq.socket "pub"
+        @column_socket.bind connectionString, @bindHandler(@column_socket, 'COLUMN', 'PUB_SUB', onBound)
 
     @sendMetaData = (data) =>
         @metadata_socket.send proto_meta.serialize data, "virtdb.interface.pb.MetaData"
+
+    @sendColumn = (columnChunk) =>
+        @column_socket.send columnChunk.QueryId, zmq.ZMQ_SNDMORE
+        @column_socket.send proto_data.serialize columnChunk, "virtdb.interface.pb.Column"
+        console.log "Column data sent: ", columnChunk.Name, "(", columnChunk.Data.length() ,")"
+
 
 class VirtDB
     svcConfigSocket: null   # Communicating endpoints and config
@@ -58,27 +85,38 @@ class VirtDB
             ]
         Protocol.sendEndpoint endpoint
 
-    onMetaDataRequest: (callback) =>
-        @_onIP () =>
-            Protocol.metaDataServer 'tcp://'+@IP+':*', callback, (err, zmqAddress) =>
-                console.log "Listening on", zmqAddress
-                endpoint =
-                    Endpoints: [
-                        Name: @name
-                        SvcType: 'META_DATA'
-                        Connections: [
-                            Type: 'REQ_REP'
-                            Address: [
-                                zmqAddress
-                            ]
+    _setupEndpoint: (protocol_call, callback) =>
+        protocol_call 'tcp://'+@IP+':*', callback, (err, svcType, zmqType, zmqAddress) =>
+            console.log "Listening ("+svcType+") on", zmqAddress
+            endpoint =
+                Endpoints: [
+                    Name: @name
+                    SvcType: svcType
+                    Connections: [
+                        Type: zmqType
+                        Address: [
+                            zmqAddress
                         ]
                     ]
-                Protocol.sendEndpoint endpoint
+                ]
+            Protocol.sendEndpoint endpoint
+
+
+    onMetaDataRequest: (callback) =>
+        @_onIP () =>
+            @_setupEndpoint Protocol.metaDataServer, callback
         return
 
+    onQuery: (callback) =>
+        @_onIP () =>
+            @_setupEndpoint Protocol.queryServer, callback
+            @_setupEndpoint Protocol.columnServer
+
     sendMetaData: (data) =>
-        console.log data
         Protocol.sendMetaData data
+
+    sendColumn: (data) =>
+        Protocol.sendColumn data
 
     _onIP: (callback) =>
         if @IP?

@@ -33,7 +33,6 @@ class MetaDataService
                     current_table =
                         Name: table_name
                         Fields: []
-                    console.time current_table.Name
                     first_row = true
 
                     on_record = (data) =>
@@ -62,7 +61,6 @@ class MetaDataService
                         columns: null
                     )
                     fs.createReadStream(file).pipe(parser).pipe(transformer).on 'end', =>
-                        console.timeEnd current_table.Name
                         # log.debug "end of ", file
                         callback()
                 , =>
