@@ -27,32 +27,6 @@ query_socket.on "message", (request) ->
     return
 
 #
-# Metadata socket: receives metadata queries and sends replies
-#
-metadata_socket = zmq.socket("rep")
-metadata_socket.bind CONST.METADATA.URL, (err) ->
-    if err
-        log.error err
-    else
-        log.info "Listening on ", CONST.METADATA.URL
-    return
-
-metadata_socket.on "message", (request) ->
-    try
-        newData = proto_meta.parse(request, "virtdb.interface.pb.MetaDataRequest")
-        module.exports.emit CONST.METADATA.MESSAGE, newData
-    catch ex
-        log.error ex
-        metadata_socket.send 'err'
-    return
-
-module.exports.on CONST.METADATA.REPLY.MESSAGE, (data) ->
-    buf = proto_meta.serialize(data, "virtdb.interface.pb.MetaData")
-    metadata_socket.send buf
-    # publisher_socket.send(buf)
-    # log.debug "Column data sent: ", column_data.Name, "(", column_data.Data.length() ,")"
-
-#
 # Publisher socket: sends back the data
 #
 publisher_socket = zmq.socket("pub")

@@ -6,6 +6,42 @@ udp         = require 'dgram'
 async       = require "async"
 
 proto_service_config = new protobuf(fs.readFileSync('../../src/common/proto/svc_config.pb.desc'))
+proto_meta           = new protobuf(fs.readFileSync('../../src/common/proto/meta_data.pb.desc'))
+
+class Protocol
+    @svcConfigScoket = null
+    @metadata_socket = null
+
+    @svcConfig = (connectionString, onEndpoint) ->
+        @svcConfigSocket = zmq.socket('req')
+        @svcConfigSocket.on 'message', (message) ->
+            endpointMessage = proto_service_config.parse message, 'virtdb.interface.pb.Endpoint'
+            for endpoint in endpointMessage.Endpoints
+                onEndpoint endpoint
+
+        @svcConfigSocket.connect connectionString
+
+    @sendEndpoint = (endpoint) ->
+        @svcConfigSocket.send proto_service_config.serialize endpoint, 'virtdb.interface.pb.Endpoint'
+
+    @metaDataServer = (connectionString, onRequest, onBound) ->
+        @metadata_socket = zmq.socket("rep")
+        @metadata_socket.on "message", (request) ->
+            try
+                newData = proto_meta.parse(request, "virtdb.interface.pb.MetaDataRequest")
+                onRequest newData
+            catch ex
+                log.error ex
+                @metadata_socket.send 'err'
+            return
+        @metadata_socket.bind connectionString, (err) =>
+            zmqAddress = ""
+            if not err
+                zmqAddress = @metadata_socket.getsockopt zmq.ZMQ_LAST_ENDPOINT
+            onBound(err, zmqAddress)
+
+    @sendMetaData = (data) =>
+        @metadata_socket.send proto_meta.serialize data, "virtdb.interface.pb.MetaData"
 
 class VirtDB
     svcConfigSocket: null   # Communicating endpoints and config
@@ -13,39 +49,18 @@ class VirtDB
 
     constructor: (@name, connectionString) ->
         # Connect to VirtDB Service Config
-        @svcConfigSocket = zmq.socket('req')
-        @svcConfigSocket.on 'message', @_onEndpointList
-        @svcConfigSocket.connect connectionString
+        Protocol.svcConfig connectionString, @_onEndpoint
+
         endpoint =
             Endpoints: [
                 Name: @name
                 SvcType: 'NONE'
             ]
-        @svcConfigSocket.send proto_service_config.serialize endpoint, 'virtdb.interface.pb.Endpoint'
-        setInterval () =>
-            if @IP != null
-                return
-        , 50
+        Protocol.sendEndpoint endpoint
 
-    handleMetaData: (callback) =>
-        @metadata_socket = zmq.socket("rep")
-        @metadata_socket.on "message", (request) ->
-            try
-                newData = proto_meta.parse(request, "virtdb.interface.pb.MetaDataRequest")
-                console.log newData
-                callback newData
-            catch ex
-                log.error ex
-                metadata_socket.send 'err'
-            return
-
+    onMetaDataRequest: (callback) =>
         @_onIP () =>
-            zmqAddress = ""
-            @metadata_socket.bind 'tcp://'+@IP+':*', (err) =>
-                if err
-                    console.log err
-                    return
-                zmqAddress = @metadata_socket.getsockopt zmq.ZMQ_LAST_ENDPOINT
+            Protocol.metaDataServer 'tcp://'+@IP+':*', callback, (err, zmqAddress) =>
                 console.log "Listening on", zmqAddress
                 endpoint =
                     Endpoints: [
@@ -58,12 +73,12 @@ class VirtDB
                             ]
                         ]
                     ]
-                console.log "Original address: ", endpoint.Endpoints[0].Connections[0].Address
-                proto_message = proto_service_config.serialize endpoint, 'virtdb.interface.pb.Endpoint'
-                proto_message_decoded = proto_service_config.parse proto_message, 'virtdb.interface.pb.Endpoint'
-                console.log "Decoded address: ", proto_message_decoded.Endpoints[0].Connections[0].Address
-                @svcConfigSocket.send proto_service_config.serialize endpoint, 'virtdb.interface.pb.Endpoint'
+                Protocol.sendEndpoint endpoint
         return
+
+    sendMetaData: (data) =>
+        console.log data
+        Protocol.sendMetaData data
 
     _onIP: (callback) =>
         if @IP?
@@ -79,13 +94,7 @@ class VirtDB
             , () =>
                 callback()
 
-    _onEndpointList: (message) =>
-        endpointMessage = proto_service_config.parse message, 'virtdb.interface.pb.Endpoint'
-        for endpoint in endpointMessage.Endpoints
-            @_onEndpoint endpoint
-
     _onEndpoint: (endpoint) =>
-        console.log endpoint
         switch endpoint.SvcType
             when 'IP_DISCOVERY'
                 if not @IP?
@@ -122,7 +131,6 @@ class VirtDB
                     callback err, @IP
                 , 50
             , () =>
-                console.log @IP
                 return
 
 

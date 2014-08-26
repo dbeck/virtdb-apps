@@ -12,6 +12,7 @@ log = require 'loglevel'
 DataService = require './dataService'
 MetaDataService = require './metaDataService'
 VirtDB = require './virtdb'
+virtdb = null
 
 sendData = (column) ->
     protocol.emit CONST.DATA.MESSAGE, column
@@ -19,8 +20,7 @@ sendData = (column) ->
             column.Data.get column.Data.length() - 1
 
 sendMeta = (data) ->
-    protocol.emit CONST.METADATA.REPLY.MESSAGE, data
-    # virtdb.sendMetaData data
+    virtdb.sendMetaData data
 
 protocol.on CONST.QUERY.MESSAGE, (query_data) ->
     log.info "Query arrived: ", query_data.Table
@@ -28,19 +28,14 @@ protocol.on CONST.QUERY.MESSAGE, (query_data) ->
     new DataService(query_data, sendData).process()
     return
 
-protocol.on CONST.METADATA.MESSAGE, (request) ->
-    log.info "Metadata request arrived: ", request.Name
-    new MetaDataService(request, sendMeta).process()
-    return
-
 process.on "SIGINT", ->
     protocol.emit CONST.CLOSE_MESSAGE
     return
 
 try
-    virtdb = new VirtDB "csv-provider", "tcp://localhost:65006"
+    virtdb = new VirtDB "csv-provider", "tcp://localhost:65001"
 
-    virtdb.handleMetaData (request) ->
+    virtdb.onMetaDataRequest (request) ->
         log.info "Metadata request arrived: ", request.Name
         new MetaDataService(request, sendMeta).process()
         return
