@@ -15,12 +15,12 @@ namespace
   int usage(const EXC & exc)
   {
     std::cerr << "Exception: " << exc.what() << "\n"
-      << "\n"
-      << "Usage: config_client_sample <ZeroMQ-EndPoint>\n"
-      << "\n"
-      << " endpoint examples: \n"
-      << "  \"ipc:///tmp/cfg-endpoint\"\n"
-      << "  \"tcp://localhost:65001\"\n\n";
+              << "\n"
+              << "Usage: config_client_sample <ZeroMQ-EndPoint>\n"
+              << "\n"
+              << " endpoint examples: \n"
+              << "  \"ipc:///tmp/cfg-endpoint\"\n"
+              << "  \"tcp://localhost:65001\"\n\n";
     return 100;
   }
 }
