@@ -1,80 +1,71 @@
-CONST = require("./config").Const
+fs          = require 'fs'
+zmq         = require 'zmq'
+protobuf    = require 'node-protobuf'
 
-zmq             = require("zmq")
-EventEmitter    = require('events').EventEmitter
-fs              = require("fs")
-p               = require("node-protobuf")
-proto_data      = new p(fs.readFileSync(CONST.DATA.PROTO_FILE))
-proto_meta      = new p(fs.readFileSync(CONST.METADATA.PROTO_FILE))
-log             = require('loglevel')
-
-module.exports = new EventEmitter()
-
-#
-# Query socket: receives queries
-#
-query_socket = zmq.socket("pull")
-query_socket.bind CONST.QUERY.URL, (err) ->
-    if err
-        log.error err
-    else
-        log.info "Listening on ", CONST.QUERY.URL
-    return
-
-query_socket.on "message", (request) ->
-    newData = proto_data.parse(request, "virtdb.interface.pb.Query")
-    module.exports.emit CONST.QUERY.MESSAGE, newData
-    return
-
-#
-# Metadata socket: receives metadata queries and sends replies
-#
-metadata_socket = zmq.socket("rep")
-metadata_socket.bind CONST.METADATA.URL, (err) ->
-    if err
-        log.error err
-    else
-        log.info "Listening on ", CONST.METADATA.URL
-    return
-
-metadata_socket.on "message", (request) ->
-    try
-        newData = proto_meta.parse(request, "virtdb.interface.pb.MetaDataRequest")
-        module.exports.emit CONST.METADATA.MESSAGE, newData
-    catch ex
-        log.error ex
-        metadata_socket.send 'err'
-    return
-
-module.exports.on CONST.METADATA.REPLY.MESSAGE, (data) ->
-    buf = proto_meta.serialize(data, "virtdb.interface.pb.MetaData")
-    metadata_socket.send buf
-    # publisher_socket.send(buf)
-    # log.debug "Column data sent: ", column_data.Name, "(", column_data.Data.length() ,")"
-
-#
-# Publisher socket: sends back the data
-#
-publisher_socket = zmq.socket("pub")
-publisher_socket.bind CONST.DATA.URL, (err) ->
-    if err
-        log.error err
-    else
-        log.info "Listening on ", CONST.DATA.URL
-    return
-
-module.exports.on CONST.DATA.MESSAGE, (column_data) ->
-    buf = proto_data.serialize column_data, "virtdb.interface.pb.Column"
-    publisher_socket.send column_data.QueryId, zmq.ZMQ_SNDMORE
-    publisher_socket.send buf
-    log.debug "Column data sent: ", column_data.Name, "(", column_data.Data.length() ,")"
+proto_service_config = new protobuf(fs.readFileSync('../../src/common/proto/svc_config.pb.desc'))
+proto_meta           = new protobuf(fs.readFileSync('../../src/common/proto/meta_data.pb.desc'))
+proto_data           = new protobuf(fs.readFileSync('../../src/common/proto/data.pb.desc'))
 
 
+class Protocol
+    @svcConfigScoket = null
+    @metadata_socket = null
+    @column_socket = null
 
-#
-# On exit close the sockets
-#
-module.exports.on CONST.CLOSE_MESSAGE, ->
-    metadata_socket.close()
-    query_socket.close()
-    publisher_socket.close()
+    @svcConfig = (connectionString, onEndpoint) ->
+        @svcConfigSocket = zmq.socket('req')
+        @svcConfigSocket.on 'message', (message) ->
+            endpointMessage = proto_service_config.parse message, 'virtdb.interface.pb.Endpoint'
+            for endpoint in endpointMessage.Endpoints
+                onEndpoint endpoint
+
+        @svcConfigSocket.connect connectionString
+
+    @sendEndpoint = (endpoint) ->
+        @svcConfigSocket.send proto_service_config.serialize endpoint, 'virtdb.interface.pb.Endpoint'
+
+    @bindHandler = (socket, svcType, zmqType, onBound) ->
+        return (err) ->
+            zmqAddress = ""
+            if not err
+                zmqAddress = socket.getsockopt zmq.ZMQ_LAST_ENDPOINT
+            onBound err, svcType, zmqType, zmqAddress
+
+
+    @metaDataServer = (connectionString, onRequest, onBound) =>
+        @metadata_socket = zmq.socket("rep")
+        @metadata_socket.on "message", (request) ->
+            try
+                newData = proto_meta.parse(request, "virtdb.interface.pb.MetaDataRequest")
+                onRequest newData
+            catch ex
+                console.log ex
+                @metadata_socket.send 'err'
+            return
+        @metadata_socket.bind connectionString, @bindHandler(@metadata_socket, 'META_DATA', 'REQ_REP', onBound)
+
+    @queryServer = (connectionString, onQuery, onBound) =>
+        @query_socket = zmq.socket "pull"
+        @query_socket.on "message", (request) ->
+            try
+                query = proto_data.parse(request, "virtdb.interface.pb.Query")
+                onQuery query
+            catch ex
+                console.log ex
+            return
+        @query_socket.bind connectionString, @bindHandler(@query_socket, 'QUERY', 'PUSH_PULL', onBound)
+
+    @columnServer = (connectionString, callback, onBound) =>
+        @column_socket = zmq.socket "pub"
+        @column_socket.bind connectionString, @bindHandler(@column_socket, 'COLUMN', 'PUB_SUB', onBound)
+
+    @sendMetaData = (data) =>
+        @metadata_socket.send proto_meta.serialize data, "virtdb.interface.pb.MetaData"
+
+    @sendColumn = (columnChunk) =>
+        @column_socket.send columnChunk.QueryId, zmq.ZMQ_SNDMORE
+        @column_socket.send proto_data.serialize columnChunk, "virtdb.interface.pb.Column"
+        console.log "Column data sent: ", columnChunk.Name, "(", columnChunk.Data.length() ,")"
+
+
+module.exports = Protocol
