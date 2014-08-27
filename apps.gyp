@@ -39,9 +39,9 @@
       },],
       ['OS=="linux"', {
         # 'cflags': [ '<!@(pkg-config --cflags protobuf libzmq)', '-Werror' ],  -- TODO commented out only for temporary linux build fix
-        'cflags': [ '<!@(pkg-config --cflags protobuf libzmq)' ],
+        'cflags': [ '<!@(pkg-config --cflags protobuf libzmq) -g3' ],
         'link_settings': {
-          'ldflags': ['-Wl,--no-as-needed',],
+          'ldflags': ['-Wl,--no-as-needed -g3',],
           'libraries': [ '<!@(pkg-config --libs-only-L --libs-only-l protobuf libzmq)', ],
         },
       },],

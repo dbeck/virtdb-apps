@@ -2,7 +2,6 @@ fs      = require("fs")             # reading data descriptor and CSV files
 csv     = require("csv")            # csv parsing
 glob    = require("glob")           # case insensitive file search
 FieldData = require("./fieldData")
-CONST = require("./config").Const
 log = require('loglevel')
 async = require("async")
 
@@ -33,7 +32,6 @@ class MetaDataService
                     current_table =
                         Name: table_name
                         Fields: []
-                    console.time current_table.Name
                     first_row = true
 
                     on_record = (data) =>
@@ -62,7 +60,6 @@ class MetaDataService
                         columns: null
                     )
                     fs.createReadStream(file).pipe(parser).pipe(transformer).on 'end', =>
-                        console.timeEnd current_table.Name
                         # log.debug "end of ", file
                         callback()
                 , =>

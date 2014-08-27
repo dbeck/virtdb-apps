@@ -9,13 +9,13 @@ class Config
         DATA:
             MESSAGE: "column"
             URL: "tcp://*:5556"
-            PROTO_FILE: "../../src/proto/data.pb.desc"
+            PROTO_FILE: "../../src/common/proto/data.pb.desc"
         METADATA:
             MESSAGE: "metadata"
             REPLY:
                 MESSAGE: "metadata_reply"
             URL: "tcp://*:5557"
-            PROTO_FILE: "../../src/proto/meta_data.pb.desc"
+            PROTO_FILE: "../../src/common/proto/meta_data.pb.desc"
         MAX_CHUNK_SIZE: 100000
         CLOSE_MESSAGE: "close"
 

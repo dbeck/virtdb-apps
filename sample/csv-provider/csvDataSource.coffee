@@ -5,32 +5,28 @@
 
 require('source-map-support').install()
 
-logger  = require "./logger"
-protocol = require "./protocol"
-CONST = require("./config").Const
 log = require 'loglevel'
 DataService = require './dataService'
 MetaDataService = require './metaDataService'
+VirtDB = require './virtdb'
 
-sendData = (column) ->
-    protocol.emit CONST.DATA.MESSAGE, column
-    log.debug column.Data.FieldName, " - length: ", column.Data.length(), " last value: ",
-            column.Data.get column.Data.length() - 1
 
-sendMeta = (data) ->
-    protocol.emit CONST.METADATA.REPLY.MESSAGE, data
+try
+    virtdb = new VirtDB("csv-provider", "tcp://localhost:65001")
 
-protocol.on CONST.QUERY.MESSAGE, (query_data) ->
-    log.info "Query arrived: ", query_data.Table
-    log.debug logger.dumpQuery query_data
-    new DataService(query_data, sendData).process()
-    return
+    virtdb.onMetaDataRequest (request) ->
+        log.debug "Metadata request arrived: ", request.Name
+        new MetaDataService(request, virtdb.sendMetaData).process()
+        return
 
-protocol.on CONST.METADATA.MESSAGE, (request) ->
-    log.info "Metadata request arrived: ", request.Name
-    new MetaDataService(request, sendMeta).process()
-    return
+    virtdb.onQuery (query) ->
+        log.debug "Query arrived: ", query.QueryId
+        new DataService(query, virtdb.sendColumn).process()
+
+catch e
+    virtdb?.close()
+    console.log e
 
 process.on "SIGINT", ->
-    protocol.emit CONST.CLOSE_MESSAGE
+    virtdb?.close()
     return

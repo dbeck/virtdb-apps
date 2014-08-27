@@ -7,6 +7,8 @@ keypress = require 'keypress'
 log             = require('loglevel');
 log.setLevel('debug')
 
+VirtDB = require "./virtdb"
+
 request_socket = null
 
 config_socket = zmq.socket("push")
