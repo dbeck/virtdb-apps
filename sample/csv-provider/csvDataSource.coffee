@@ -14,13 +14,15 @@ VirtDB = require './virtdb'
 try
     virtdb = new VirtDB("csv-provider", "tcp://localhost:65001")
 
+    VirtDB.info "Starting up"
+
     virtdb.onMetaDataRequest (request) ->
-        log.debug "Metadata request arrived: ", request.Name
+        VirtDB.info "Metadata request arrived: ", request.Name
         new MetaDataService(request, virtdb.sendMetaData).process()
         return
 
     virtdb.onQuery (query) ->
-        log.debug "Query arrived: ", query.QueryId
+        VirtDB.info "Query arrived: ", query.QueryId
         new DataService(query, virtdb.sendColumn).process()
 
 catch e

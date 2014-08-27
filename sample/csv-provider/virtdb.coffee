@@ -2,9 +2,9 @@
 udp         = require 'dgram'
 async       = require "async"
 Protocol    = require './protocol'
+Diag        = require './diag'
 
 class VirtDB
-    svcConfigSocket: null   # Communicating endpoints and config
     IP: null
 
     constructor: (@name, connectionString) ->
@@ -52,10 +52,7 @@ class VirtDB
         Protocol.sendColumn data
 
     close: =>
-        @svcConfigScoket.close()
-        @metadata_socket.close()
-        @column_socket.close()
-
+        Protocol.close()
 
     _onIP: (callback) =>
         if @IP?
@@ -65,17 +62,26 @@ class VirtDB
                 setTimeout =>
                     err = null
                     if not @IP?
-                        err "IP is not set yet"
+                        err = "IP is not set yet"
                     retry_callback err, @IP
                 , 50
-            , ->
-                callback()
+            , =>
+                if @IP?
+                    callback()
 
     _onEndpoint: (endpoint) =>
         switch endpoint.SvcType
             when 'IP_DISCOVERY'
                 if not @IP?
-                    @_findMyIP endpoint.Connections[0].Address.toString()
+                    for connection in endpoint.Connections
+                        if connection.Type == 'RAW_UDP'
+                            @_findMyIP connection.Address[0] # TODO should we handle more addresses here?
+            when 'LOG_RECORD'
+                for connection in endpoint.Connections
+                    if connection.Type == 'PUSH_PULL'
+                        newAddress = Protocol.connectToDiag connection.Address
+                        if newAddress?
+                            console.log "Connected to logger: ", newAddress
 
     _findMyIP: (discoveryAddress) =>
         if discoveryAddress.indexOf 'raw_udp://' == 0
@@ -110,5 +116,6 @@ class VirtDB
             , ->
                 return
 
+    @info = Diag.info
 
 module.exports = VirtDB
