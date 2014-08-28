@@ -5,9 +5,11 @@
 #include <memory>
 #include <chrono>
 #include <thread>
+#include <iostream>
 
 using namespace virtdb;
 using namespace virtdb::connector;
+using namespace virtdb::interface;
 
 namespace
 {
@@ -36,14 +38,43 @@ int main(int argc, char ** argv)
       THROW_("invalid number of arguments");
     }
     
-    endpoint_client     ep_clnt(argv[1], "diag_client");
+    endpoint_client     ep_clnt(argv[1], "config_client");
     log_record_client   log_clnt(ep_clnt);
     config_client       cfg_clnt(ep_clnt);
+
+    cfg_clnt.watch(ep_clnt.name(),
+                   [](const pb::Config & cfg)
+    {
+      std::cout << "Received config (SUB):\n" << cfg.DebugString() << "\n";
+      return true;
+    });
+    
+    pb::Config cfg_req;
+    cfg_req.set_name(ep_clnt.name());
+    
+    cfg_clnt.get_config(cfg_req, [](const pb::Config & cfg)
+    {
+      std::cout << "Received config:\n" << cfg.DebugString() << "\n";
+      return true;
+    });
+
+    auto cfgdata = cfg_req.mutable_configdata();
+    cfgdata->set_key("Hello");
+    auto mval = cfgdata->mutable_value();
+    util::value_type<int32_t>::set(*mval, 1);
+
     
     for( int i=0;i<4;++i )
     {
       // give a chance to log sender to initialize
       std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+      
+      cfg_clnt.get_config(cfg_req,
+                          [](const pb::Config & cfg)
+      {
+        // don't care. want to see SUB messages ...
+        return true;
+      });
     }
     
     LOG_TRACE("exiting");
