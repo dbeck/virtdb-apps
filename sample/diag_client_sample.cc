@@ -6,7 +6,7 @@
 #include <chrono>
 #include <thread>
 
-using namespace virtdb;
+using namespace virtdb::interface;
 using namespace virtdb::connector;
 
 namespace
@@ -46,8 +46,6 @@ namespace
 
 int main(int argc, char ** argv)
 {
-  using logger::log_sink;
-  
   try
   {
     if( argc < 2 )
@@ -63,11 +61,11 @@ int main(int argc, char ** argv)
     log_error_test();
     log_scoped_test();
     
-    interface::pb::GetLogs req;
+    pb::GetLogs req;
     req.set_microsecrange(100000000);
     
     log_clnt.get_logs(req,
-                      [](interface::pb::LogRecord & rec){
+                      [](pb::LogRecord & rec){
       std::cout << "Log record arrived.\n"
                 << rec.DebugString() << "\n"
                 << " #data:" << rec.data_size()
@@ -80,7 +78,7 @@ int main(int argc, char ** argv)
     std::cout << "Waiting for 20s to receive log records on the PUB channel\n\n";
     
     log_clnt.watch("hello-watch", [](const std::string & name,
-                                     interface::pb::LogRecord & rec) {
+                                     pb::LogRecord & rec) {
       
       std::cout << "Log record arrived (PUB-SUB).\n"
                 << rec.DebugString() << "\n"

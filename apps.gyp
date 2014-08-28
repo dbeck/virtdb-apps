@@ -61,6 +61,12 @@
       'sources':           [ 'src/config-service/main.cc', ],
     },
     {
+      'target_name':       'testdata-service',
+      'type':              'executable',
+      'dependencies':      [ 'src/common/common.gyp:common', ],
+      'sources':           [ 'src/testdata-service/main.cc', ],
+    },
+    {
       'target_name':       'diag_client_sample',
       'type':              'executable',
       'dependencies':      [ 'src/common/common.gyp:common', ],
@@ -72,5 +78,12 @@
       'dependencies':      [ 'src/common/common.gyp:common', ],
       'sources':           [ 'sample/config_client_sample.cc', ],
     },
+    {
+      'target_name':       'dataprovider_client_sample',
+      'type':              'executable',
+      'dependencies':      [ 'src/common/common.gyp:common', ],
+      'sources':           [ 'sample/dataprovider_client_sample.cc', ],
+    },
   ],
 }
+

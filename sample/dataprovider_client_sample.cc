@@ -12,10 +12,10 @@ namespace
   {
     std::cerr << "Exception: " << exc.what() << "\n"
               << "\n"
-              << "Usage: diag-service <ZeroMQ-EndPoint>\n"
+              << "Usage: dataprovider_client_sample <ZeroMQ-EndPoint>\n"
               << "\n"
               << " endpoint examples: \n"
-              << "  \"ipc:///tmp/diag-endpoint\"\n"
+              << "  \"ipc:///tmp/cfg-endpoint\"\n"
               << "  \"tcp://localhost:65001\"\n\n";
     return 100;
   }
@@ -30,16 +30,10 @@ int main(int argc, char ** argv)
       THROW_("invalid number of arguments");
     }
     
-    endpoint_client     ep_clnt(argv[1], "diag_svc");
+    endpoint_client     ep_clnt(argv[1], "config_client");
     log_record_client   log_clnt(ep_clnt);
-    config_client       cfg_clnt(ep_clnt);
-    log_record_server   log_svr(cfg_clnt);
     
-    while( true )
-    {
-      std::this_thread::sleep_for(std::chrono::seconds(15));
-      LOG_TRACE("alive");
-    }
+    LOG_TRACE("exiting");
   }
   catch (const std::exception & e)
   {
@@ -47,4 +41,3 @@ int main(int argc, char ** argv)
   }
   return 0;
 }
-

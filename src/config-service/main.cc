@@ -1,16 +1,8 @@
 
-// proto
-#include <svc_config.pb.h>
 #include <logger.hh>
-#include <util.hh>
 #include <connector.hh>
-// others
-#include <zmq.hpp>
-#include <map>
-#include <set>
+#include <iostream>
 
-using namespace virtdb;
-using namespace virtdb::interface;
 using namespace virtdb::connector;
 
 namespace
@@ -20,7 +12,7 @@ namespace
   {
     std::cerr << "Exception: " << exc.what() << "\n"
               << "\n"
-              << "Usage: svc_config_svc_sample <Request-Reply-EndPoint> <Pub-Sub-Endpoint>\n"
+              << "Usage: config-service <Request-Reply-EndPoint> <Pub-Sub-Endpoint>\n"
               << "\n"
               << " endpoint examples: \n"
               << "  \"ipc:///tmp/svc_config-endpoint\"\n"
@@ -44,7 +36,6 @@ int main(int argc, char ** argv)
     endpoint_server     ep_srv(argv[1],"svc_config");
     endpoint_client     ep_clnt(ep_srv.local_ep(), ep_srv.name());
     log_record_client   log_clnt(ep_clnt);
-    // TODO : config client
     config_client       cfg_clnt(ep_clnt);
     config_server       cfg_srv(cfg_clnt, ep_srv);
     
@@ -53,7 +44,6 @@ int main(int argc, char ** argv)
       std::this_thread::sleep_for(std::chrono::seconds(15));
       LOG_TRACE("alive");
     }
-
   }
   catch (const std::exception & e)
   {

@@ -1,8 +1,12 @@
 
 #include <logger.hh>
 #include <connector.hh>
+#include <chrono>
+#include <thread>
 #include <iostream>
 
+using namespace virtdb::interface;
+using namespace virtdb::util;
 using namespace virtdb::connector;
 
 namespace
@@ -11,12 +15,12 @@ namespace
   int usage(const EXC & exc)
   {
     std::cerr << "Exception: " << exc.what() << "\n"
-              << "\n"
-              << "Usage: diag-service <ZeroMQ-EndPoint>\n"
-              << "\n"
-              << " endpoint examples: \n"
-              << "  \"ipc:///tmp/diag-endpoint\"\n"
-              << "  \"tcp://localhost:65001\"\n\n";
+    << "\n"
+    << "Usage: testdata-service <ZeroMQ-EndPoint>\n"
+    << "\n"
+    << " endpoint examples: \n"
+    << "  \"ipc:///tmp/diag-endpoint\"\n"
+    << "  \"tcp://localhost:65001\"\n\n";
     return 100;
   }
 }
