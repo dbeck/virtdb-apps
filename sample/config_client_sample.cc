@@ -2,12 +2,11 @@
 #include <logger.hh>
 #include <util.hh>
 #include <connector.hh>
-#include <memory>
 #include <chrono>
 #include <thread>
 #include <iostream>
 
-using namespace virtdb;
+using namespace virtdb::util;
 using namespace virtdb::connector;
 using namespace virtdb::interface;
 
@@ -29,8 +28,6 @@ namespace
 
 int main(int argc, char ** argv)
 {
-  using logger::log_sink;
-  
   try
   {
     if( argc < 2 )
@@ -61,7 +58,7 @@ int main(int argc, char ** argv)
     auto cfgdata = cfg_req.mutable_configdata();
     cfgdata->set_key("Hello");
     auto mval = cfgdata->mutable_value();
-    util::value_type<int32_t>::set(*mval, 1);
+    value_type<int32_t>::set(*mval, 1);
 
     
     for( int i=0;i<4;++i )
