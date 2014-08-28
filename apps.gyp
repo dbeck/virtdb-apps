@@ -61,10 +61,10 @@
       'sources':           [ 'src/config-service/main.cc', ],
     },
     {
-      'target_name':       'testdata-service',
+      'target_name':       'testdata-provider',
       'type':              'executable',
       'dependencies':      [ 'src/common/common.gyp:common', ],
-      'sources':           [ 'src/testdata-service/main.cc', ],
+      'sources':           [ 'src/testdata-provider/main.cc', ],
     },
     {
       'target_name':       'diag_client_sample',
