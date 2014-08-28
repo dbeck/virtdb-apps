@@ -49,6 +49,7 @@ Object.defineProperty global, "__func",
 
 
 class Diag
+    @_startHR = null
     @_startDate = null
     @_startTime = null
     @_random = null
@@ -189,6 +190,11 @@ class Diag
                         false
                     ]
 
+    @_ellapsedMicrosec: () =>
+        if not @_startHR?
+            @_startHR = process.hrtime()
+        ellapsed = process.hrtime(@_startHR)
+        return (ellapsed[0] * 1e9 + ellapsed[1]) / 1000
 
     @_log: (level, args) =>
         console.time "log"
@@ -196,7 +202,7 @@ class Diag
         record.Process = @_getProcessInfo()
         record.Data = [
                 HeaderSeqNo: @_getHeaderSeqNo(__file, __func, __line, level, args)
-                ElapsedMicroSec: process.uptime() * 1000000 # in Node.js process uptime is in seconds
+                ElapsedMicroSec: @_ellapsedMicrosec()
                 ThreadId: 0
                 Values: []
             ]
