@@ -9,20 +9,23 @@ log = require 'loglevel'
 DataService = require './dataService'
 MetaDataService = require './metaDataService'
 VirtDB = require './virtdb'
-
+log = VirtDB.log
+V = log.Variable
 
 try
     virtdb = new VirtDB("csv-provider", "tcp://localhost:65001")
 
-    VirtDB.info "Starting up"
+    now = new Date()
+
+    log.info "Starting up @", V(now.toLocaleDateString()), '-', V(now.toLocaleTimeString())
 
     virtdb.onMetaDataRequest (request) ->
-        VirtDB.info "Metadata request arrived: ", request.Name
+        log.info "Metadata request arrived: ", V(request.Name)
         new MetaDataService(request, virtdb.sendMetaData).process()
         return
 
     virtdb.onQuery (query) ->
-        VirtDB.info "Query arrived: ", query.QueryId
+        log.info "Query arrived: ", V(query.QueryId)
         new DataService(query, virtdb.sendColumn).process()
 
 catch e

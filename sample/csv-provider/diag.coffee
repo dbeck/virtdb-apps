@@ -1,6 +1,12 @@
 Protocol = require "./protocol"
 os = require 'os'
 
+class Variable
+    constructor: (@content) ->
+
+    toString: () ->
+        @content
+
 Date::yyyymmdd = () ->
     yyyy = @getFullYear().toString()
     mm = (@getMonth() + 1).toString() # getMonth() is zero-based
@@ -8,9 +14,9 @@ Date::yyyymmdd = () ->
     yyyy + ((if mm[1] then mm else "0" + mm[0])) + ((if dd[1] then dd else "0" + dd[0])) # padding
 
 Date::hhmmss = () ->
-    hh = @getHours().toString()
-    mm = @getMinutes().toString()
-    ss = @getSeconds().toString()
+    hh = ('0'+@getHours().toString()).slice(-2)
+    mm = ('0'+@getMinutes().toString()).slice(-2)
+    ss = ('0'+@getSeconds().toString()).slice(-2)
     hh + mm + ss
 
 String::startsWith = (other) ->
@@ -47,6 +53,10 @@ class Diag
     @_startTime = null
     @_random = null
     @_name = null
+    @_symbols = {}
+    @_newSymbols = []
+    @_headers = {}
+    @_newHeaders = []
 
     @startDate: =>
         if not @_startDate?
@@ -70,60 +80,181 @@ class Diag
                     @_name = argument.substring "name=".length, argument.length
         @_name
 
-    @_log: (level, args) =>
-        record =
-            Process:
-                StartDate: @startDate()
-                StartTime: @startTime()
-                Pid: process.pid
-                Random: @random()
-                NameSymbol: 4
-                HostSymbol: 5
-            Symbols: [
-                SeqNo: 1
-                Value: __file
-            ,
-                SeqNo: 2
-                Value: __func
-            ,
-                SeqNo: 4
-                Value: @process_name()
-            ,
-                SeqNo: 5
-                Value: os.hostname()
-            ]
-            Headers: [
-                SeqNo: 1
-                FileNameSymbol: 1
-                LineNumber: __line
-                FunctionNameSymbol: 2
+
+    @_getProcessInfo: () =>
+        Process =
+            StartDate: @startDate()
+            StartTime: @startTime()
+            Pid: process.pid
+            Random: @random()
+            NameSymbol: @_getSymbolSeqNo @process_name()
+            HostSymbol: @_getSymbolSeqNo os.hostname()
+        return Process
+
+    @_getNewSymbols: () =>
+        Symbols = []
+        for symbol in @_newSymbols
+            Symbols.push symbol
+        @_newSymbols = []
+        return Symbols
+
+    @_getNewHeaders: () =>
+        Headers = []
+        for header in @_newHeaders
+            Headers.push header
+        @_newHeaders = []
+        return Headers
+
+    @_getSymbolSeqNo: (symbolValue) =>
+        if symbolValue not of @_symbols
+            @_symbols[symbolValue] = Object.keys(@_symbols).length
+            @_newSymbols.push
+                SeqNo: @_symbols[symbolValue]
+                Value: symbolValue
+        return @_symbols[symbolValue]
+
+    @_getHeaderSeqNo: (file, func, line, level, args) =>
+        key = '' + file + func + line + level + args.length
+        if key not of @_headers
+            @_headers[key] =
+                SeqNo: Object.keys(@_headers).length
+                FileNameSymbol: @_getSymbolSeqNo file
+                LineNumber: line
+                FunctionNameSymbol: @_getSymbolSeqNo func
                 Level: level
                 LogStringSymbol: 0
-                Parts: [
-                    IsVariable: false
-                    HasData: true
-                    Type: 'STRING'
-                ]
-            ]
-            Data: [
-                HeaderSeqNo: 1
-                ElapsedMicroSec: 50
-                ThreadId: 0
-                Values: [
+                Parts: []
+            for argument in args
+                switch typeof argument
+                    when 'object'
+                        @_headers[key].Parts.push
+                            IsVariable: true
+                            HasData: true
+                            Type: 'STRING'
+                    else
+                        @_headers[key].Parts.push
+                            IsVariable: false
+                            HasData: false
+                            Type: 'STRING'
+                            PartSymbol: @_getSymbolSeqNo argument
+            @_newHeaders.push @_headers[key]
+        return @_headers[key].SeqNo
+
+    @_value: (argument) ->
+        switch  typeof argument
+            when 'string'
+                ret =
                     Type: 'STRING'
                     StringValue: [
-                        args[0]
+                        argument
                     ]
                     IsNull: [
                         false
                     ]
-                ]
+            when 'number'
+                if not isFinite(argument)
+                    ret =
+                        Type: 'STRING'
+                        StringValue: [
+                            argument
+                        ]
+                        IsNull: [
+                            false
+                        ]
+                else if argument % 1 == 0
+                    ret =
+                        Type: 'INT64'
+                        Int64Value: [
+                            argument
+                        ]
+                        IsNull: [
+                            false
+                        ]
+                else
+                    ret =
+                        Type: 'DOUBLE'
+                        DoubleValue: [
+                            argument
+                        ]
+                        IsNull: [
+                            false
+                        ]
+            else
+                ret =
+                    Type: 'STRING'
+                    StringValue: [
+                        argument.toString()
+                    ]
+                    IsNull: [
+                        false
+                    ]
+
+
+    @_log: (level, args) =>
+        console.time "log"
+        record = {}
+        record.Process = @_getProcessInfo()
+        record.Data = [
+                HeaderSeqNo: @_getHeaderSeqNo(__file, __func, __line, level, args)
+                ElapsedMicroSec: process.uptime() * 1000000 # in Node.js process uptime is in seconds
+                ThreadId: 0
+                Values: []
             ]
+        for argument in args
+            type = typeof(argument)
+            switch  type
+                when 'object'
+                    record.Data[0].Values.push @_value(argument.content)
+
+        record.Symbols = @_getNewSymbols()
+        record.Headers = @_getNewHeaders()
 
         Protocol.sendDiag record
-
-    @info: (args...) =>
-        @_log 'INFO', args
+        console.timeEnd "log"
 
 
-module.exports = Diag
+class Log
+    @levels =
+        SILENT: 'silent'
+        TRACE: 'trace'
+        DEBUG: 'debug'
+        INFO: 'info'
+        WARN: 'warn'
+        ERROR: 'error'
+
+    @level = 'trace'
+
+    @trace: (args...) ->
+        if @level in ['trace']
+            Diag._log 'SIMPLE_TRACE', args
+
+    @debug: (args...) ->
+        if @level in ['trace', 'debug']
+            Diag._log 'SIMPLE_TRACE', args
+
+    @info: (args...) ->
+        if @level in ['trace', 'debug', 'info']
+            Diag._log 'INFO', args
+
+    @warn: (args...) ->
+        if @level in ['trace', 'debug', 'info', 'warn']
+            Diag._log 'INFO', args
+
+    @error: (args...) ->
+        if @level in ['trace', 'debug', 'info', 'warn', 'error']
+            Diag._log 'ERROR', args
+
+    @setLevel: (level) =>
+        @level = level.toLowerCase?()
+
+    @enableAll: () =>
+        @setLevel @levels.TRACE
+
+    @disableAll: () =>
+        @setLevel @levels.SILENT
+
+    @Variable = (param) ->
+        new Variable(param)
+
+
+module.exports = Log
