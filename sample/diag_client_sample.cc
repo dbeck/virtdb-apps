@@ -2,12 +2,11 @@
 #include <logger.hh>
 #include <util.hh>
 #include <connector.hh>
-#include <zmq.hpp>
 #include <memory>
 #include <chrono>
 #include <thread>
 
-using namespace virtdb;
+using namespace virtdb::interface;
 using namespace virtdb::connector;
 
 namespace
@@ -47,8 +46,6 @@ namespace
 
 int main(int argc, char ** argv)
 {
-  using logger::log_sink;
-  
   try
   {
     if( argc < 2 )
@@ -59,16 +56,39 @@ int main(int argc, char ** argv)
     endpoint_client     ep_clnt(argv[1], "diag_client");
     log_record_client   log_clnt(ep_clnt);
 
-    for( int i=0;i<4;++i )
-    {
-      // give a chance to log sender to initialize
-      std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+    // send test messages
+    log_info_test();
+    log_error_test();
+    log_scoped_test();
     
-      // tests
-      log_info_test();
-      log_error_test();
-      log_scoped_test();
-    }
+    pb::GetLogs req;
+    req.set_microsecrange(100000000);
+    
+    log_clnt.get_logs(req,
+                      [](pb::LogRecord & rec){
+      std::cout << "Log record arrived.\n"
+                << rec.DebugString() << "\n"
+                << " #data:" << rec.data_size()
+                << " #headers:" << rec.headers_size()
+                << " #symbols:" << rec.symbols_size()
+                << "\n\n";
+      return true;
+    });
+    
+    std::cout << "Waiting for 20s to receive log records on the PUB channel\n\n";
+    
+    log_clnt.watch("hello-watch", [](const std::string & name,
+                                     pb::LogRecord & rec) {
+      
+      std::cout << "Log record arrived (PUB-SUB).\n"
+                << rec.DebugString() << "\n"
+                << " #data:" << rec.data_size()
+                << " #headers:" << rec.headers_size()
+                << " #symbols:" << rec.symbols_size()
+                << "\n\n";
+    });
+    
+    std::this_thread::sleep_for(std::chrono::seconds(20));
     
     LOG_INFO("exiting");
     
