@@ -37,7 +37,9 @@ int main(int argc, char ** argv)
     endpoint_client     ep_clnt(argv[1], "diag_svc");
     log_record_client   log_clnt(ep_clnt);
     config_client       cfg_clnt(ep_clnt);
-    log_record_server   log_svr(cfg_clnt);
+    column_server       col_srv(cfg_clnt);
+    query_server        query_srv(cfg_clnt);
+    meta_data_server    meta_srv(cfg_clnt);
     
     while( true )
     {
