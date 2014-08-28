@@ -10,7 +10,7 @@ var node;
  */
 gulp.task('server', ['coffee'], function() {
   if (node) node.kill()
-  node = spawn('node', ['out/csvDataSource.js'], {stdio: 'inherit'})
+  node = spawn('node', ['out/csvDataSource.js', 'name=csv-provider'], {stdio: 'inherit'})
   node.on('close', function (code) {
     if (code === 8) {
       console.log('Error detected, waiting for changes...');
