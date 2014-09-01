@@ -13,3 +13,4 @@ Submodules have their own license. cppzmq, node.js and virtdb-proto (Apache 2.0)
 Please check their documentation for details.
 
 
+More info at: http://virtdb.com
