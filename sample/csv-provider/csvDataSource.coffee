@@ -8,7 +8,7 @@ require('source-map-support').install()
 log = require 'loglevel'
 DataService = require './dataService'
 MetaDataService = require './metaDataService'
-VirtDB = require './virtdb'
+VirtDB = require 'virtdb-connector'
 log = VirtDB.log
 V = log.Variable
 
