@@ -1,13 +1,11 @@
 zmq  = require "zmq"
 fs   = require "fs"
 pb    = require "node-protobuf"
-proto_meta   = new pb fs.readFileSync "../../src/proto/meta_data.pb.desc"
-proto_config = new pb fs.readFileSync "../../src/proto/db_config.pb.desc"
+proto_meta   = new pb fs.readFileSync "../../src/common/proto/meta_data.pb.desc"
+proto_config = new pb fs.readFileSync "../../src/common/proto/db_config.pb.desc"
 keypress = require 'keypress'
 log             = require('loglevel');
 log.setLevel('debug')
-
-VirtDB = require "./virtdb"
 
 request_socket = null
 
@@ -17,8 +15,10 @@ config_socket.connect "tcp://localhost:5558"
 sendRequest = () ->
     console.time "Metadata request"
     request_data =
-        Name: '^Master$'
-        Schema: 'data'
+        #Name: '^Master$'
+        Name: '.*'
+        #Schema: 'data'
+        WithFields: true
     buf = proto_meta.serialize(request_data, "virtdb.interface.pb.MetaDataRequest")
     request_socket.send buf
 
@@ -39,10 +39,12 @@ resetSocket = () ->
     if request_socket
         request_socket.close()
     request_socket = zmq.socket("req")
-    request_socket.connect "tcp://localhost:5557"
+    #request_socket.connect "tcp://localhost:5557"
+    request_socket.connect "tcp://192.168.221.3:50398"
     request_socket.on 'message', (message) ->
         reply = proto_meta.parse(message, "virtdb.interface.pb.MetaData")
-        configDB reply
+        #configDB reply
+        console.log reply
 keypress process.stdin
 resetSocket()
 

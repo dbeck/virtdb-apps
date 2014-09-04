@@ -75,7 +75,8 @@ int main(int argc, char ** argv)
     }
     
     LOG_TRACE("exiting");
-    
+    ep_clnt.remove_watches();
+    cfg_clnt.remove_watches();
   }
   catch (const std::exception & e)
   {

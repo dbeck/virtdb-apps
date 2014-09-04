@@ -33,11 +33,11 @@ int main(int argc, char ** argv)
     endpoint_client     ep_clnt(argv[1], "config_client");
     log_record_client   log_clnt(ep_clnt);
     column_client       column_clnt(ep_clnt, "testdata-provider");
+    meta_data_client    meta_clnt(ep_clnt, "testdata-provider");
     
     // TODO :
-    // column_client
     // query_client
-    // meta_data_client
+    //
     
     LOG_TRACE("exiting");
   }
