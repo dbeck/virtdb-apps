@@ -53,7 +53,7 @@ int main(int argc, char ** argv)
       THROW_("invalid number of arguments");
     }
     
-    endpoint_client     ep_clnt(argv[1], "diag_client");
+    endpoint_client     ep_clnt(argv[1], "diag-client");
     log_record_client   log_clnt(ep_clnt);
 
     // send test messages

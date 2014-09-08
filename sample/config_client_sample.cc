@@ -35,7 +35,7 @@ int main(int argc, char ** argv)
       THROW_("invalid number of arguments");
     }
     
-    endpoint_client     ep_clnt(argv[1], "config_client");
+    endpoint_client     ep_clnt(argv[1], "config-client");
     log_record_client   log_clnt(ep_clnt);
     config_client       cfg_clnt(ep_clnt);
 
@@ -51,7 +51,7 @@ int main(int argc, char ** argv)
     
     cfg_clnt.get_config(cfg_req, [](const pb::Config & cfg)
     {
-      std::cout << "Received config:\n" << cfg.DebugString() << "\n";
+      //std::cout << "Received config:\n" << cfg.DebugString() << "\n";
       return true;
     });
 
