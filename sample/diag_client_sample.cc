@@ -53,8 +53,8 @@ int main(int argc, char ** argv)
       THROW_("invalid number of arguments");
     }
     
-    endpoint_client     ep_clnt(argv[1], "diag_client");
-    log_record_client   log_clnt(ep_clnt);
+    endpoint_client     ep_clnt(argv[1], "diag-client");
+    log_record_client   log_clnt(ep_clnt, "diag-service");
 
     // send test messages
     log_info_test();
@@ -64,8 +64,8 @@ int main(int argc, char ** argv)
     pb::GetLogs req;
     req.set_microsecrange(100000000);
     
-    log_clnt.get_logs(req,
-                      [](pb::LogRecord & rec){
+    log_clnt.send_request(req,
+                      [](const pb::LogRecord & rec){
       std::cout << "Log record arrived.\n"
                 << rec.DebugString() << "\n"
                 << " #data:" << rec.data_size()
@@ -73,9 +73,9 @@ int main(int argc, char ** argv)
                 << " #symbols:" << rec.symbols_size()
                 << "\n\n";
       return true;
-    });
+    }, 1000);
     
-    std::cout << "Waiting for 20s to receive log records on the PUB channel\n\n";
+    std::cout << "Waiting for 70s to receive log records on the PUB channel\n\n";
     
     log_clnt.watch("hello-watch", [](const std::string & name,
                                      pb::LogRecord & rec) {
@@ -88,7 +88,7 @@ int main(int argc, char ** argv)
                 << "\n\n";
     });
     
-    std::this_thread::sleep_for(std::chrono::seconds(20));
+    std::this_thread::sleep_for(std::chrono::seconds(70));
     
     LOG_INFO("exiting");
     
