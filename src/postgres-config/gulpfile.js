@@ -35,7 +35,7 @@ gulp.task('watch', function()
 {
     gulp.watch(['./*.coffee'], ['coffee']);
     gulp.watch(['out/index.js'], function() {
-        gulp.run('server')
+        gulp.start('server')
     })
 });
 

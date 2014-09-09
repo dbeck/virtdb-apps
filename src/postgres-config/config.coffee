@@ -6,9 +6,9 @@ class Config
         DB_CONFIG:
             MESSAGE: "config"
             URL: "tcp://*:5558"
-            PROTO_FILE: "../../src/proto/db_config.pb.desc"
+            PROTO_FILE: "../../src/common/proto/db_config.pb.desc"
         META_DATA:
-            PROTO_FILE: "../../src/proto/meta_data.pb.desc"
+            PROTO_FILE: "../../src/common/proto/meta_data.pb.desc"
         MAX_CHUNK_SIZE: 100000
         CLOSE_MESSAGE: "close"
     @Error:
