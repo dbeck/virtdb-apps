@@ -31,8 +31,8 @@ int main(int argc, char ** argv)
     }
     
     endpoint_client     ep_clnt(argv[1], "diag-service");
-    log_record_client   log_clnt(ep_clnt);
-    config_client       cfg_clnt(ep_clnt);
+    log_record_client   log_clnt(ep_clnt, "diag-service");
+    config_client       cfg_clnt(ep_clnt, "config-service");
     log_record_server   log_svr(cfg_clnt);
     
     while( true )

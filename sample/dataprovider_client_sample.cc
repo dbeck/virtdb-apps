@@ -32,14 +32,10 @@ int main(int argc, char ** argv)
     }
     
     endpoint_client     ep_clnt(argv[1], "dataprovider-client");
-    log_record_client   log_clnt(ep_clnt);
+    log_record_client   log_clnt(ep_clnt, "diag-service");
     column_client       column_clnt(ep_clnt, "testdata-provider");
     meta_data_client    meta_clnt(ep_clnt, "testdata-provider");
-    
-    /*
-     public req_client<interface::pb::MetaDataRequest,
-     interface::pb::MetaData>
-     */
+    query_client        qry_clnt(ep_clnt, "testdata-provider");
     
     pb::MetaDataRequest req;
     req.set_name(".*");
@@ -59,11 +55,18 @@ int main(int argc, char ** argv)
                              return true;
                            },
                            1000);
-
     
-    // TODO :
-    // query_client
-    //
+    pb::Query query;
+    query.set_queryid("1");
+    query.set_table("test-table");
+    auto f1 = query.add_fields();
+    f1->set_name("intfield");
+    auto f1desc = f1->mutable_desc();
+    f1desc->set_type(pb::Kind::INT32);
+    
+    qry_clnt.send_request(query);
+    
+    // read columns
     
     LOG_TRACE("exiting");
   }

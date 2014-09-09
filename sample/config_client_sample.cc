@@ -36,8 +36,8 @@ int main(int argc, char ** argv)
     }
     
     endpoint_client     ep_clnt(argv[1], "config-client");
-    log_record_client   log_clnt(ep_clnt);
-    config_client       cfg_clnt(ep_clnt);
+    log_record_client   log_clnt(ep_clnt, "diag-service");
+    config_client       cfg_clnt(ep_clnt, "config-service");
 
     cfg_clnt.watch(ep_clnt.name(),
                    [](const pb::Config & cfg)
@@ -49,11 +49,11 @@ int main(int argc, char ** argv)
     pb::Config cfg_req;
     cfg_req.set_name(ep_clnt.name());
     
-    cfg_clnt.get_config(cfg_req, [](const pb::Config & cfg)
+    cfg_clnt.send_request(cfg_req, [](const pb::Config & cfg)
     {
       //std::cout << "Received config:\n" << cfg.DebugString() << "\n";
       return true;
-    });
+    },1000);
 
     auto cfgdata = cfg_req.mutable_configdata();
     cfgdata->set_key("Hello");
@@ -66,12 +66,12 @@ int main(int argc, char ** argv)
       // give a chance to log sender to initialize
       std::this_thread::sleep_for(std::chrono::milliseconds(2000));
       
-      cfg_clnt.get_config(cfg_req,
+      cfg_clnt.send_request(cfg_req,
                           [](const pb::Config & cfg)
       {
         // don't care. want to see SUB messages ...
         return true;
-      });
+      },1000);
     }
     
     LOG_TRACE("exiting");

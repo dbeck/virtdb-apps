@@ -33,10 +33,10 @@ int main(int argc, char ** argv)
       THROW_("invalid number of arguments");
     }
     
-    endpoint_server     ep_srv(argv[1],"config-service");
+    endpoint_server     ep_srv(argv[1], "config-service");
     endpoint_client     ep_clnt(ep_srv.local_ep(), ep_srv.name());
-    log_record_client   log_clnt(ep_clnt);
-    config_client       cfg_clnt(ep_clnt);
+    log_record_client   log_clnt(ep_clnt, "diag-service");
+    config_client       cfg_clnt(ep_clnt, "config-service");
     config_server       cfg_srv(cfg_clnt, ep_srv);
     
     while( true )
