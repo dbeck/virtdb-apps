@@ -40,11 +40,33 @@ int main(int argc, char ** argv)
     config_client       cfg_clnt(ep_clnt, "config-service");
 
     cfg_clnt.watch(ep_clnt.name(),
-                   [](const pb::Config & cfg)
-    {
-      std::cout << "Received config (SUB):\n" << cfg.DebugString() << "\n";
-      return true;
-    });
+                   [](const std::string & provider_name,
+                      const std::string & channel,
+                      const std::string & subscription,
+                      std::shared_ptr<pb::Config> cfg)
+                   {
+                     
+                     std::cout << "Received config (SUB):\n"
+                               << "Provider=" << provider_name << "\n"
+                               << "Channel=" << channel << "\n"
+                               << "Subscription=" << subscription << "\n"
+                               << cfg->DebugString() << "\n";
+                   });
+
+    cfg_clnt.watch("*",
+                   [](const std::string & provider_name,
+                      const std::string & channel,
+                      const std::string & subscription,
+                      std::shared_ptr<pb::Config> cfg)
+                   {
+                     
+                     std::cout << "Received config (SUB):\n"
+                               << "Provider=" << provider_name << "\n"
+                               << "Channel=" << channel << "\n"
+                               << "Subscription=" << subscription << "\n"
+                               << cfg->DebugString() << "\n";
+                   });
+
     
     pb::Config cfg_req;
     cfg_req.set_name(ep_clnt.name());
@@ -57,14 +79,15 @@ int main(int argc, char ** argv)
 
     auto cfgdata = cfg_req.mutable_configdata();
     cfgdata->set_key("Hello");
-    auto mval = cfgdata->mutable_value();
-    value_type<int32_t>::set(*mval, 1);
 
     
     for( int i=0;i<4;++i )
     {
       // give a chance to log sender to initialize
-      std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+      std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
+      auto mval = cfgdata->mutable_value();
+      value_type<int32_t>::set(*mval, i);
       
       cfg_clnt.send_request(cfg_req,
                           [](const pb::Config & cfg)

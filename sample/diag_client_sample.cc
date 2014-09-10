@@ -77,14 +77,19 @@ int main(int argc, char ** argv)
     
     std::cout << "Waiting for 70s to receive log records on the PUB channel\n\n";
     
-    log_clnt.watch("hello-watch", [](const std::string & name,
-                                     pb::LogRecord & rec) {
+    log_clnt.watch("*", [](const std::string & provider_name,
+                           const std::string & channel,
+                           const std::string & subscription,
+                           std::shared_ptr<pb::LogRecord> rec) {
       
       std::cout << "Log record arrived (PUB-SUB).\n"
-                << rec.DebugString() << "\n"
-                << " #data:" << rec.data_size()
-                << " #headers:" << rec.headers_size()
-                << " #symbols:" << rec.symbols_size()
+                << rec->DebugString() << "\n"
+                << " #data:" << rec->data_size()
+                << " #headers:" << rec->headers_size()
+                << " #symbols:" << rec->symbols_size() << "\n"
+                << "Provider='" << provider_name << "'\n"
+                << "Channel='" << channel << "'\n"
+                << "Subscription='" << subscription << "'\n"
                 << "\n\n";
     });
     

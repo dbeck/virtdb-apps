@@ -57,12 +57,47 @@ int main(int argc, char ** argv)
     add_field(*table, "intfield", pb::Kind::INT32);
     add_field(*table, "strfield", pb::Kind::STRING);
     meta_srv.add_table(table);
+    
+    
 
-    query_srv.watch("", [](const std::string & provider_name,
-                           query_server::query_sptr data) {
+    query_srv.watch("", [&](const std::string & provider_name,
+                            query_server::query_sptr data) {
       std::string data_str{data->DebugString()};
       LOG_TRACE("Query arrived to" << V_(provider_name) << V_(data_str));
       // TODO : pass Query to column_server
+      
+      for( auto const & f : data->fields() )
+      {
+        std::shared_ptr<pb::Column> col{new pb::Column};
+        col->set_queryid(data->queryid());
+        col->set_name(f.name());
+        auto desc = f.desc();
+        auto val = col->mutable_data();
+        switch( desc.type() )
+        {
+          case pb::Kind::INT32:
+          {
+            val->set_type(pb::Kind::INT32);
+            for( int32_t i=0;i<100;++i )
+              val->add_int32value(i);
+            break;
+          };
+
+          default:
+          case pb::Kind::STRING:
+          {
+            val->set_type(pb::Kind::STRING);
+            for( int32_t i=0;i<100;++i )
+              *(val->add_stringvalue()) = std::to_string(i);
+            break;
+          }
+        }
+        col->set_seqno(1);
+        col->set_endofdata(true);
+        std::ostringstream os;
+        os << data->queryid() << " " << f.name();
+        col_srv.publish(os.str(), col);
+      }
     });
     
     while( true )
