@@ -26,6 +26,7 @@ class DataService
             QueryId: query.QueryId
             Name: field.Name
             Data: FieldData.createInstance(field)
+            SeqNo: 0
             EndOfData: false
 
     # Public methods

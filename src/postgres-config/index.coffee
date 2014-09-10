@@ -65,7 +65,24 @@ class Configurator
         async.each @server_config.Tables, (table, tables_callback) =>
             q_create_table = "CREATE FOREIGN TABLE " + table.Name + "("
             for field in table.Fields
-                q_create_table += "\"" + field.Name + "\"" + " VARCHAR, "
+                switch field.Desc.Type
+                    when 'INT32', 'UINT32'
+                        q_create_table += "\"" + field.Name + "\"" + " INTEGER, "
+                    when 'INT64', 'UINT64'
+                        q_create_table += "\"" + field.Name + "\"" + " BIGINT, "
+                    when 'FLOAT'
+                        q_create_table += "\"" + field.Name + "\"" + " FLOAT4, "
+                    when 'DOUBLE'
+                        q_create_table += "\"" + field.Name + "\"" + " FLOAT8, "
+                    when 'NUMERIC'
+                        q_create_table += "\"" + field.Name + "\"" + " NUMERIC, "
+                    when 'DATE'
+                        q_create_table += "\"" + field.Name + "\"" + " DATE, "
+                    when 'TIME'
+                        q_create_table += "\"" + field.Name + "\"" + " TIME, "
+                    else
+                        q_create_table += "\"" + field.Name + "\"" + " VARCHAR, "
+
             q_create_table = q_create_table.substring(0, q_create_table.length - 2)
             q_create_table += ") server " + @server_config.Name + "_srv"
             @postgres.query q_create_table, (err, result) ->
