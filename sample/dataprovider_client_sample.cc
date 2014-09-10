@@ -4,6 +4,7 @@
 #include <iostream>
 
 using namespace virtdb::connector;
+using namespace virtdb::interface;
 
 namespace
 {
@@ -30,14 +31,60 @@ int main(int argc, char ** argv)
       THROW_("invalid number of arguments");
     }
     
-    endpoint_client     ep_clnt(argv[1], "config_client");
-    log_record_client   log_clnt(ep_clnt);
+    endpoint_client     ep_clnt(argv[1], "dataprovider-client");
+    log_record_client   log_clnt(ep_clnt, "diag-service");
     column_client       column_clnt(ep_clnt, "testdata-provider");
+    meta_data_client    meta_clnt(ep_clnt, "testdata-provider");
+    query_client        qry_clnt(ep_clnt, "testdata-provider");
     
-    // TODO :
-    // column_client
-    // query_client
-    // meta_data_client
+    pb::MetaDataRequest req;
+    req.set_name(".*");
+    req.set_withfields(false);
+    
+    meta_clnt.send_request(req,
+                           [](const pb::MetaData & rep) {
+                             std::cout << "MetaData reply:\n" << rep.DebugString() << "\n";
+                             return true;
+                           },
+                           1000);
+
+    req.set_withfields(true);
+    meta_clnt.send_request(req,
+                           [](const pb::MetaData & rep) {
+                             std::cout << "MetaData reply:\n" << rep.DebugString() << "\n";
+                             return true;
+                           },
+                           1000);
+    
+    pb::Query query;
+    query.set_queryid("1");
+    query.set_table("test-table");
+    auto f1 = query.add_fields();
+    f1->set_name("intfield");
+    auto f1desc = f1->mutable_desc();
+    f1desc->set_type(pb::Kind::INT32);
+
+    auto f2 = query.add_fields();
+    f2->set_name("strfield");
+    auto f2desc = f2->mutable_desc();
+    f2desc->set_type(pb::Kind::STRING);
+    
+    std::cout << "Start waiting for data for 10s\n\n";
+    
+    column_clnt.watch("*",[](const std::string & provider_name,
+                             const std::string & channel,
+                             const std::string & subscription,
+                             std::shared_ptr<pb::Column> data)
+    {
+      std::cout << "PROVIDER      =" << provider_name << "\n"
+                << "CHANNEL       ="  << channel << "\n"
+                << "SUBSCRIPTION  =" << subscription << "\n"
+                << "DATA          =\n" << data->DebugString() << "\n";
+    });
+    
+    qry_clnt.send_request(query);
+    
+    std::this_thread::sleep_for(std::chrono::seconds(10));
     
     LOG_TRACE("exiting");
   }

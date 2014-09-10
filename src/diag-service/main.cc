@@ -30,14 +30,14 @@ int main(int argc, char ** argv)
       THROW_("invalid number of arguments");
     }
     
-    endpoint_client     ep_clnt(argv[1], "diag_svc");
-    log_record_client   log_clnt(ep_clnt);
-    config_client       cfg_clnt(ep_clnt);
+    endpoint_client     ep_clnt(argv[1], "diag-service");
+    log_record_client   log_clnt(ep_clnt, "diag-service");
+    config_client       cfg_clnt(ep_clnt, "config-service");
     log_record_server   log_svr(cfg_clnt);
     
     while( true )
     {
-      std::this_thread::sleep_for(std::chrono::seconds(15));
+      std::this_thread::sleep_for(std::chrono::seconds(60));
       LOG_TRACE("alive");
     }
   }
