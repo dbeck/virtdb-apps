@@ -36,9 +36,11 @@ int main(int argc, char ** argv)
     column_client       column_clnt(ep_clnt, (argc>2 ? argv[2] : "testdata-provider"));
     meta_data_client    meta_clnt(ep_clnt,   (argc>2 ? argv[2] : "testdata-provider"));
     query_client        qry_clnt(ep_clnt,    (argc>2 ? argv[2] : "testdata-provider"));
+
+    std::string         table_name{argc>2 ? argv[3] : ".*"};
     
     pb::MetaDataRequest req;
-    req.set_name(".*");
+    req.set_name(table_name);
     req.set_withfields(false);
     
     meta_clnt.send_request(req,
@@ -46,7 +48,7 @@ int main(int argc, char ** argv)
                              std::cout << "MetaData reply:\n" << rep.DebugString() << "\n";
                              return true;
                            },
-                           1000);
+                           30000);
 
     req.set_withfields(true);
     meta_clnt.send_request(req,
@@ -54,7 +56,7 @@ int main(int argc, char ** argv)
                              std::cout << "MetaData reply:\n" << rep.DebugString() << "\n";
                              return true;
                            },
-                           1000);
+                           99000);
     
     pb::Query query;
     query.set_queryid("1");
