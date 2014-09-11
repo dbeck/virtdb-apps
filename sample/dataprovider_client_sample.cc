@@ -31,11 +31,11 @@ int main(int argc, char ** argv)
       THROW_("invalid number of arguments");
     }
     
-    endpoint_client     ep_clnt(argv[1], "dataprovider-client");
-    log_record_client   log_clnt(ep_clnt, "diag-service");
-    column_client       column_clnt(ep_clnt, "testdata-provider");
-    meta_data_client    meta_clnt(ep_clnt, "testdata-provider");
-    query_client        qry_clnt(ep_clnt, "testdata-provider");
+    endpoint_client     ep_clnt(argv[1],     "dataprovider-client");
+    log_record_client   log_clnt(ep_clnt,    "diag-service");
+    column_client       column_clnt(ep_clnt, (argc>2 ? argv[2] : "testdata-provider"));
+    meta_data_client    meta_clnt(ep_clnt,   (argc>2 ? argv[2] : "testdata-provider"));
+    query_client        qry_clnt(ep_clnt,    (argc>2 ? argv[2] : "testdata-provider"));
     
     pb::MetaDataRequest req;
     req.set_name(".*");
