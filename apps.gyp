@@ -2,8 +2,22 @@
   'target_defaults': {
     'default_configuration': 'Debug',
     'configurations': {
-      'Debug': { 'defines': ['DEBUG', '_DEBUG', ], },
-      'Release': { 'defines': ['NDEBUG', 'RELEASE', ], },
+      'Debug': {
+        'defines':  ['DEBUG', '_DEBUG', ],
+        'cflags':   ['-O0', '-g3', ],
+        'ldflags':  ['-g3', ],
+        'xcode_settings': {
+          'OTHER_CFLAGS':  [ '-O0', '-g3', ],
+          'OTHER_LDFLAGS': [ '-g3', ],
+        },
+      },
+      'Release': {
+        'defines': ['NDEBUG', 'RELEASE', ],
+        'cflags': ['-O3', ],
+        'xcode_settings': {
+          'OTHER_LDFLAGS': [ '-O3', ],
+        },
+      },
     },
     'include_dirs': [
       'src/',
@@ -39,7 +53,6 @@
         },
       },],
       ['OS=="linux"', {
-        # 'cflags': [ '<!@(pkg-config --cflags protobuf libzmq)', '-Werror' ],  -- TODO commented out only for temporary linux build fix
         'cflags': [ '<!@(pkg-config --cflags protobuf libzmq) -g3' ],
         'link_settings': {
           'ldflags': ['-Wl,--no-as-needed -g3',],

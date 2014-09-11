@@ -1,0 +1,23 @@
+{
+  "name": "dummy-provider",
+  "version": "0.0.0",
+  "description": "Dummy VirtDB provider",
+  "main": "out/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/starschema/virtdb-apps"
+  },
+  "author": "",
+  "license": "LPGL v3",
+  "bugs": {
+    "url": "https://github.com/starschema/virtdb-apps/issues"
+  },
+  "homepage": "https://github.com/starschema/virtdb-apps",
+  "devDependencies": {
+    "gulp": "^3.8.7",
+    "gulp-coffee": "^2.2.0"
+  }
+}

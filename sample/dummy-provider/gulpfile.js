@@ -8,9 +8,9 @@ var node;
  * $ gulp server
  * description: launch the server. If there's a server already running, kill it.
  */
-gulp.task('server', function() {
+gulp.task('server', ['coffee'], function() {
   if (node) node.kill()
-  node = spawn('node', ['out/index.js', 'name=postgres-config'], {stdio: 'inherit'})
+  node = spawn('node', ['out/index.js', 'name=dummy-provider'], {stdio: 'inherit'})
   node.on('close', function (code) {
     if (code === 8) {
       console.log('Error detected, waiting for changes...');
@@ -31,7 +31,7 @@ gulp.task('coffee', function() {
         .pipe(gulp.dest('./out'))
 });
 
-gulp.task('watch', function()
+gulp.task('watch', ['server'], function()
 {
     gulp.watch(['./*.coffee'], ['coffee']);
     gulp.watch(['out/index.js'], function() {
@@ -39,4 +39,4 @@ gulp.task('watch', function()
     })
 });
 
-gulp.task('default', ['coffee', 'watch', 'server']);
+gulp.task('default', ['watch']);
