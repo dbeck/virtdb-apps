@@ -4,28 +4,29 @@
 #
 
 require('source-map-support').install()
+argv = require('minimist')(process.argv.slice(2))
 
-log = require 'loglevel'
 DataService = require './dataService'
 MetaDataService = require './metaDataService'
 VirtDB = require 'virtdb-connector'
 log = VirtDB.log
-V = log.Variable
+V_ = log.Variable
 
 try
-    virtdb = new VirtDB("csv-provider", "tcp://localhost:65001")
+    console.log "Arguments got:", argv
+    virtdb = new VirtDB(argv['name'], argv['url'])
 
     now = new Date()
 
-    log.info "Starting up @", V(now.toLocaleDateString()), '-', V(now.toLocaleTimeString())
+    log.info "Starting up @", V_(now.toLocaleDateString()), '-', V_(now.toLocaleTimeString())
 
     virtdb.onMetaDataRequest (request) ->
-        log.info "Metadata request arrived: ", V(request.Name)
+        log.info "Metadata request arrived: ", V_(request.Name)
         new MetaDataService(request, virtdb.sendMetaData).process()
         return
 
     virtdb.onQuery (query) ->
-        log.info "Query arrived: ", V(query.QueryId)
+        log.info "Query arrived: ", V_(query.QueryId), V_(query.Table), V_(query.Fields)
         new DataService(query, virtdb.sendColumn).process()
 
 catch e

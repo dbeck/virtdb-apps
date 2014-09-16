@@ -26,7 +26,7 @@
     "async": "0.9.0",
     "csv": "0.4.0",
     "glob": "4.0.5",
-    "loglevel": "1.0.0",
+    "minimist": "^1.1.0",
     "node-protobuf": "1.2.0",
     "source-map-support": "0.2.7",
     "zmq": "2.7.0"

@@ -1,4 +1,6 @@
 class FieldData
+    length = 0
+
     @createInstance: (field) ->
         switch field.Desc.Type
             when "STRING"
@@ -26,13 +28,16 @@ class FieldData
         @Type = field.Desc.Type
         @FieldName = field.Name
         @IsNull = new Array()
+        @length = 0
 
     # Call from not supported descendant classes only
     push: (value) =>
-        @IsNull.push true
+        @IsNull.push value
+        @length = @IsNull.length
 
     reset: =>
         @IsNull = new Array()
+        @length = 0
 
 class StringFieldData extends FieldData
     constructor: (field) ->
@@ -41,7 +46,7 @@ class StringFieldData extends FieldData
 
     push: (value) =>
         @StringValue.push value
-        @IsNull.push (value == "")
+        super(value == "")
 
     length: =>
         @StringValue.length

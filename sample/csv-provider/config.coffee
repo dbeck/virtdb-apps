@@ -1,6 +1,3 @@
-log = require('loglevel');
-log.setLevel('debug')
-
 class Config
     @Const:
         QUERY:
