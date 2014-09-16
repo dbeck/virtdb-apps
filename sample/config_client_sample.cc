@@ -35,23 +35,16 @@ int main(int argc, char ** argv)
       THROW_("invalid number of arguments");
     }
     
-    endpoint_client     ep_clnt(argv[1], "config-client");
+    endpoint_client     ep_clnt(argv[1],  "config-client");
     log_record_client   log_clnt(ep_clnt, "diag-service");
     config_client       cfg_clnt(ep_clnt, "config-service");
 
-    cfg_clnt.watch(ep_clnt.name(),
-                   [](const std::string & provider_name,
-                      const std::string & channel,
-                      const std::string & subscription,
-                      std::shared_ptr<pb::Config> cfg)
-                   {
-                     
-                     std::cout << "Received config (SUB):\n"
-                               << "Provider=" << provider_name << "\n"
-                               << "Channel=" << channel << "\n"
-                               << "Subscription=" << subscription << "\n"
-                               << cfg->DebugString() << "\n";
-                   });
+    log_clnt.wait_valid_push();
+    LOG_INFO("log connected");
+
+    cfg_clnt.wait_valid_sub();
+    cfg_clnt.wait_valid_req();
+    LOG_INFO("config client connected");
 
     cfg_clnt.watch("*",
                    [](const std::string & provider_name,
@@ -59,12 +52,10 @@ int main(int argc, char ** argv)
                       const std::string & subscription,
                       std::shared_ptr<pb::Config> cfg)
                    {
-                     
-                     std::cout << "Received config (SUB):\n"
-                               << "Provider=" << provider_name << "\n"
-                               << "Channel=" << channel << "\n"
-                               << "Subscription=" << subscription << "\n"
-                               << cfg->DebugString() << "\n";
+                     LOG_INFO("Received config (SUB):" << V_(provider_name) 
+                               << V_(channel) 
+                               << V_(subscription) 
+                               << M_(*cfg));
                    });
 
     
@@ -95,6 +86,12 @@ int main(int argc, char ** argv)
         // don't care. want to see SUB messages ...
         return true;
       },1000);
+    }
+
+    while(true)
+    {
+      std::this_thread::sleep_for(std::chrono::seconds(60));
+      LOG_INFO("alive");
     }
     
     LOG_TRACE("exiting");
