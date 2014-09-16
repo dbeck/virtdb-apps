@@ -3,7 +3,9 @@ csv     = require("csv")            # csv parsing
 glob    = require("glob")           # case insensitive file search
 FieldData = require("./fieldData")
 CONST = require("./config").Const
-log = require('loglevel')
+VirtDB = require 'virtdb-connector'
+log = VirtDB.log
+V_ = log.Variable
 
 class DataService
     limit: 0
@@ -30,7 +32,7 @@ class DataService
             EndOfData: false
 
     # Public methods
-    constructor: (query, sendData) ->
+    constructor: (query, @sendData) ->
         @out_data = []
         @table = query.Table
         @fields = query.Fields
@@ -43,14 +45,13 @@ class DataService
         # Counter for sending in chunks
         @cursor = 0
 
-        @sendData = sendData
-
     on_record: (data) =>
         @cursor += 1
         for field in @fields
             @out_data[field.Name].Data.push data[field.Name]
             if @cursor == CONST.MAX_CMAX_CHUNK_SIZE
                 @out_data[field.Name].EndOfData = false
+                log.debug "Sending column", V_(field.Name), V_(@out_data[field.Name].Data.length)
                 @sendData @out_data[field.Name]
                 @out_data[field.Name].Data.reset()
         if @cursor == CONST.MAX_CHUNK_SIZE
@@ -59,12 +60,14 @@ class DataService
             @transformer.end()
 
     on_end: (err, output) =>
+        log.debug V_(output)
         if err
             log.error err
             return
         for field in @fields
             # if out_data[field.Name].Data.length() >= 1
             @out_data[field.Name].EndOfData = true
+            log.debug "Sending column", V_(field.Name), V_(@out_data[field.Name].Data.length)
             @sendData @out_data[field.Name]
 
     process: =>
@@ -82,7 +85,7 @@ class DataService
             if files.length != 1
                 log.error "Error. Not excatly one file with that name"
             else
-                log.debug "Opening file: ", files[0]
+                log.debug "Opening file: ", V_(files[0])
                 fs.createReadStream(files[0]).pipe(parser).pipe(@transformer)
         )
 

@@ -2,8 +2,10 @@ fs      = require("fs")             # reading data descriptor and CSV files
 csv     = require("csv")            # csv parsing
 glob    = require("glob")           # case insensitive file search
 FieldData = require("./fieldData")
-log = require('loglevel')
 async = require("async")
+VirtDB = require 'virtdb-connector'
+log = VirtDB.log
+V_ = log.Variable
 
 class MetaDataService
     reply: []
@@ -14,6 +16,8 @@ class MetaDataService
     constructor: (request, @sendData) ->
         @schema = request.Schema
         @regexp = request.Name
+        @withFields = request.WithFields
+        log.info V_(@withFiels)
 
     process: =>
         #
@@ -55,14 +59,19 @@ class MetaDataService
                                     )
                                 @reply.Tables.push current_table
 
-                    transformer = csv.transform on_record, on_end
-                    parser = csv.parse(
-                        columns: null
-                    )
-                    fs.createReadStream(file).pipe(parser).pipe(transformer).on 'end', =>
-                        # log.debug "end of ", file
+                    if @withFields
+                        transformer = csv.transform on_record, on_end
+                        parser = csv.parse(
+                            columns: null
+                        )
+                        fs.createReadStream(file).pipe(parser).pipe(transformer).on 'end', =>
+                            # log.debug "end of ", file
+                            callback()
+                    else
+                        @reply.Tables.push current_table
                         callback()
                 , =>
+                    log.info "Sending reply", V_(@reply)
                     @sendData @reply
             )
         )
