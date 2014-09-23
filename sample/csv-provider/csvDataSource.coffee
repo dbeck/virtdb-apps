@@ -8,7 +8,7 @@ argv = require('minimist')(process.argv.slice(2))
 
 DataService = require './dataService'
 MetaDataService = require './metaDataService'
-VirtDB = require 'virtdb-connector'
+VirtDB = require 'virtdb-provider'
 log = VirtDB.log
 V_ = log.Variable
 
