@@ -3,8 +3,8 @@ csv     = require("csv")            # csv parsing
 glob    = require("glob")           # case insensitive file search
 FieldData = require("./fieldData")
 CONST = require("./config").Const
-VirtDB = require 'virtdb-provider'
-log = VirtDB.log
+VirtDBDataProvider = require 'virtdb-provider'
+log = VirtDBDataProvider.log
 V_ = log.Variable
 
 class DataService

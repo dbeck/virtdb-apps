@@ -3,8 +3,7 @@ csv     = require("csv")            # csv parsing
 glob    = require("glob")           # case insensitive file search
 FieldData = require("./fieldData")
 async = require("async")
-VirtDB = require 'virtdb-provider'
-log = VirtDB.log
+log = require('virtdb-provider').log
 V_ = log.Variable
 
 class MetaDataService
