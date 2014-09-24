@@ -8,13 +8,13 @@ argv = require('minimist')(process.argv.slice(2))
 
 DataService = require './dataService'
 MetaDataService = require './metaDataService'
-VirtDB = require 'virtdb-connector'
-log = VirtDB.log
+VirtDBDataProvider = require 'virtdb-provider'
+log = VirtDBDataProvider.log
 V_ = log.Variable
 
 try
     console.log "Arguments got:", argv
-    virtdb = new VirtDB(argv['name'], argv['url'])
+    virtdb = new VirtDBDataProvider(argv['name'], argv['url'])
 
     now = new Date()
 
