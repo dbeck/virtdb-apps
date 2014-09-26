@@ -11,6 +11,7 @@ class Config
             PROTO_FILE: "../common/proto/meta_data.pb.desc"
         MAX_CHUNK_SIZE: 100000
         CLOSE_MESSAGE: "close"
+        POSTGRES_CONNECTION: "postgres://localhost/vagrant"
     @Error:
         Duplicate_Object: '42710'
 
