@@ -11,64 +11,68 @@ class DataService
     limit: 0
     cursor: 0
     out_data: []
-    table: ""
-    fields: []
+    query: null
     transformer: null
     sendData: null
+    seqNo: 0
 
     # Private methods
-    get_limit = (query) =>
-        if query.Filter.length == 0 and query.Limit
-            @limit = query.Limit
+    get_limit: =>
+        if @query.Filter?.length == 0 and @query.Limit
+            @limit = @query.Limit
         else
             @limit = CONST.MAX_CHUNK_SIZE + 1
 
-    fill_column_header = (query, field) ->
+    fill_column_header: (field) =>
         {} =
-            QueryId: query.QueryId
+            QueryId: @query.QueryId
             Name: field.Name
             Data: FieldData.createInstance(field)
-            SeqNo: 0
+            SeqNo: @seqNo
             EndOfData: false
 
     # Public methods
-    constructor: (query, @sendData) ->
+    constructor: (@query, @sendData) ->
         @out_data = []
-        @table = query.Table
-        @fields = query.Fields
-        for field in @fields
-            @out_data[field.Name] = fill_column_header(query, field)
+        for field in @query.Fields
+            @out_data[field.Name] = @fill_column_header(field)
 
         # Limit is only taken into consideration if we can handle all filters
-        @limit = get_limit(query)
+        @limit = @get_limit()
 
         # Counter for sending in chunks
         @cursor = 0
 
     on_record: (data) =>
         @cursor += 1
-        for field in @fields
+        for field in @query.Fields
             @out_data[field.Name].Data.push data[field.Name]
-            if @cursor == CONST.MAX_CMAX_CHUNK_SIZE
+            if @cursor == @query.MaxChunkSize
+                @out_data[field.Name].SeqNo = @seqNo
                 @out_data[field.Name].EndOfData = false
-                log.debug "Sending column", V_(field.Name), V_(@out_data[field.Name].Data.length)
+                log.debug "Sending column", V_(field.Name), V_(@out_data[field.Name].Data.length), V_(@out_data[field.Name].SeqNo)
                 @sendData @out_data[field.Name]
                 @out_data[field.Name].Data.reset()
-        if @cursor == CONST.MAX_CHUNK_SIZE
+        if @cursor == @query.MaxChunkSize
             @cursor = 0
+            @seqNo += 1
         if @cursor == @limit
             @transformer.end()
 
     on_end: (err, output) =>
-        log.debug V_(output)
+        # log.debug V_(output)
         if err
             log.error err
             return
-        for field in @fields
+        for field in @query.Fields
             # if out_data[field.Name].Data.length() >= 1
+            @out_data[field.Name].SeqNo = @seqNo
             @out_data[field.Name].EndOfData = true
-            log.debug "Sending column", V_(field.Name), V_(@out_data[field.Name].Data.length)
+            log.debug "Sending data"
             @sendData @out_data[field.Name]
+            log.debug "Sent data"
+            log.debug "Sending column", V_(field.Name), V_(@out_data[field.Name].Data.length), V_(@out_data[field.Name].SeqNo)
+        return
 
     process: =>
         # Gathering output per column
@@ -81,11 +85,11 @@ class DataService
         )
 
         # Case-insensitive file lookup
-        glob("data/" + @table + ".csv", { nocase: true }, (err, files) =>
+        glob("data/" + @query.Table + ".csv", { nocase: true }, (err, files) =>
             if files.length != 1
                 log.error "Error. Not excatly one file with that name"
             else
-                log.debug "Opening file: ", V_(files[0])
+                # log.debug "Opening file: ", V_(files[0])
                 fs.createReadStream(files[0]).pipe(parser).pipe(@transformer)
         )
 
