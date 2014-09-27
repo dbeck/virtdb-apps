@@ -6,8 +6,6 @@
   "private": true,
   "dependencies": {
     "gulp": "^3.8.7",
-    "keypress": "0.2.1",
-    "loglevel": "1.0.0",
     "node-protobuf": "1.2.0",
     "zmq": "2.7.0"
   },
