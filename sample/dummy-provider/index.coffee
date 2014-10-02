@@ -1,6 +1,8 @@
-VirtDB = require 'virtdb-connector'
-log = VirtDB.log
+VirtDBDataProvider = require 'virtdb-provider'
+log = VirtDBDataProvider.log
 V = log.Variable
+
+argv = require('minimist')(process.argv.slice(2))
 
 meta_data =
     Tables: [
@@ -158,7 +160,7 @@ data = [
 ]
 
 try
-    virtdb = new VirtDB("dummy-provider", "tcp://localhost:65001")
+    virtdb = new VirtDBDataProvider(argv['name'], argv['url'])
 
     virtdb.onMetaDataRequest (request) ->
         log.info "Metadata request arrived: ", V(request.Name)
