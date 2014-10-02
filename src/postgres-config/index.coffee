@@ -25,6 +25,6 @@ postgresConfig.listen()
 # On exit close the sockets
 #
 process.on "SIGINT", ->
-    if Protocol.DBConfigSocket?
-        Protocol.DBConfigSocket.close()
+    Protocol.DBConfigSocket?.close()
+    VirtDBConnector?.close()
     return
