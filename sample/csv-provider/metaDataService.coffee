@@ -34,6 +34,7 @@ class MetaDataService
                         return
                     current_table =
                         Name: table_name
+                        Schema: @schema
                         Fields: []
                     first_row = true
 
@@ -71,6 +72,7 @@ class MetaDataService
                         callback()
                 , =>
                     log.info "Sending reply", V_(@reply)
+                    log.info "asd"
                     @sendData @reply
             )
         )

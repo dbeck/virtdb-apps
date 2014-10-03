@@ -42,6 +42,7 @@ class DataService
 
         # Counter for sending in chunks
         @cursor = 0
+        log.info "end of ctr"
 
     on_record: (data) =>
         @cursor += 1
@@ -50,7 +51,7 @@ class DataService
             if @cursor == @query.MaxChunkSize
                 @out_data[field.Name].SeqNo = @seqNo
                 @out_data[field.Name].EndOfData = false
-                log.debug "Sending column", V_(field.Name), V_(@out_data[field.Name].Data.length), V_(@out_data[field.Name].SeqNo)
+                # log.debug "Sending column", V_(field.Name), V_(@out_data[field.Name].Data.length), V_(@out_data[field.Name].SeqNo)
                 @sendData @out_data[field.Name]
                 @out_data[field.Name].Data.reset()
         if @cursor == @query.MaxChunkSize
@@ -68,10 +69,10 @@ class DataService
             # if out_data[field.Name].Data.length() >= 1
             @out_data[field.Name].SeqNo = @seqNo
             @out_data[field.Name].EndOfData = true
-            log.debug "Sending data"
+            # log.debug "Sending data"
             @sendData @out_data[field.Name]
-            log.debug "Sent data"
-            log.debug "Sending column", V_(field.Name), V_(@out_data[field.Name].Data.length), V_(@out_data[field.Name].SeqNo)
+            # log.debug "Sent data"
+            # log.debug "Sending column", V_(field.Name), V_(@out_data[field.Name].Data.length), V_(@out_data[field.Name].SeqNo)
         return
 
     process: =>
