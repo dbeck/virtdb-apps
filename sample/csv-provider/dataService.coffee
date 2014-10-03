@@ -69,9 +69,7 @@ class DataService
             # if out_data[field.Name].Data.length() >= 1
             @out_data[field.Name].SeqNo = @seqNo
             @out_data[field.Name].EndOfData = true
-            # log.debug "Sending data"
             @sendData @out_data[field.Name]
-            # log.debug "Sent data"
             # log.debug "Sending column", V_(field.Name), V_(@out_data[field.Name].Data.length), V_(@out_data[field.Name].SeqNo)
         return
 
@@ -80,7 +78,6 @@ class DataService
         # CSV module objects
         @transformer = csv.transform @on_record, @on_end
 
-        # transformer = csv.transform(on_record, on_end)
         parser = csv.parse(
             columns: true
         )

@@ -72,7 +72,6 @@ class MetaDataService
                         callback()
                 , =>
                     log.info "Sending reply", V_(@reply)
-                    log.info "asd"
                     @sendData @reply
             )
         )
