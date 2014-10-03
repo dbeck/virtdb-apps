@@ -3,6 +3,8 @@ var coffee = require('gulp-coffee');
 var spawn = require('child_process').spawn;
 var sourcemaps = require('gulp-sourcemaps');
 var node;
+var argv = require('minimist')(process.argv.slice(2));
+
 
 /**
  * $ gulp server
@@ -10,7 +12,7 @@ var node;
  */
 gulp.task('server', ['coffee'], function() {
   if (node) node.kill()
-  node = spawn('node', ['out/index.js', 'name=dummy-provider'], {stdio: 'inherit'})
+  node = spawn('node', ['out/index.js', '--name='+argv['name'], '--url='+argv['url']], {stdio: 'inherit'})
   node.on('close', function (code) {
     if (code === 8) {
       console.log('Error detected, waiting for changes...');

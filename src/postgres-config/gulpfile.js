@@ -2,6 +2,7 @@ var gulp = require('gulp');
 var coffee = require('gulp-coffee');
 var spawn = require('child_process').spawn;
 var sourcemaps = require('gulp-sourcemaps');
+var argv = require('minimist')(process.argv.slice(2));
 var node;
 
 /**
@@ -10,7 +11,7 @@ var node;
  */
 gulp.task('server', function() {
   if (node) node.kill()
-  node = spawn('node', ['out/index.js', 'name=postgres-config'], {stdio: 'inherit'})
+  node = spawn('node', ['out/index.js', '--name='+argv['name'], '--url='+argv['url']], {stdio: 'inherit'})
   node.on('close', function (code) {
     if (code === 8) {
       console.log('Error detected, waiting for changes...');
