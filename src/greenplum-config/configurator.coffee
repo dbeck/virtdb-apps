@@ -4,6 +4,7 @@ pg          = require 'pg'
 async       = require 'async'
 VirtDBConnector = require 'virtdb-connector'
 log = VirtDBConnector.log
+V_ = log.Variable
 
 require('source-map-support').install();
 
@@ -12,10 +13,11 @@ class Configurator
     server_config: null
     done: null
 
-    constructor: (@server_config) ->
+    constructor: (@server_config, @config_service_url) ->
         return
 
     Query: (query, callback) =>
+        log.info "query", V_(query)
         @postgres.query query, (err, result) =>
             @done()
             if err
@@ -24,6 +26,7 @@ class Configurator
             callback()
 
     Connect: (callback) =>
+        log.info "Connect called"
         pg.connect CONST.POSTGRES_CONNECTION, (err, client, @done) =>
             if err
                 callback err
@@ -32,17 +35,20 @@ class Configurator
             callback()
 
     CreateImportFunction: (callback) =>
+        log.info "CreateImportFunction called"
         q_create_import_function =
             "CREATE OR REPLACE FUNCTION virtdb_import()
-                RETURNS integer as #{CONST.SHARED_OBJECT_PATH},
+                RETURNS integer as '#{CONST.SHARED_OBJECT_PATH}',
                 'virtdb_import' language C stable"
         @Query q_create_import_function, callback
 
     DropProtocol: (callback) =>
-        q_drop_protocol = "DROP protocol virtdb;"
+        log.info "Drop protocol called"
+        q_drop_protocol = "DROP protocol if exists virtdb;"
         @Query q_drop_protocol, callback
 
     CreateProtocol: (callback) =>
+        log.info "Create protocol called"
         q_create_protocol = "
             CREATE TRUSTED PROTOCOL virtdb (
                 readfunc='virtdb_import'
@@ -52,7 +58,7 @@ class Configurator
 
     DropTables: (callback) =>
         async.each @server_config.Tables, (table, tables_callback) =>
-            q_drop_table = "DROP EXTERNAL TABLE #{table.Name} CASCADE"
+            q_drop_table = "DROP EXTERNAL TABLE IF EXISTS #{table.Name} CASCADE"
             @Query q_drop_table, tables_callback
         , (err) =>
             log.debug "", @server_config.Tables.length, "tables dropped"
@@ -83,13 +89,15 @@ class Configurator
                         q_create_table += "\"" + field.Name + "\"" + " VARCHAR, "
 
             q_create_table = q_create_table.substring(0, q_create_table.length - 2)
-            q_create_table += ") location ('virtdb://#{config_service_url};#{server_config.Name};#{table.Schema};#{table.Name}) format 'csv'"
+            q_create_table += ") location ('virtdb://#{@config_service_url};#{@server_config.Name};#{table.Schema};#{table.Name}') format 'text' (delimiter E'\\001' null '' ) encoding 'UTF8'"
+            # q_create_table += ") location ('virtdb://#{@config_service_url};#{@server_config.Name};#{table.Schema};#{table.Name}') format 'csv' (delimiter E'\\001')"
             @Query q_create_table, tables_callback
         , (err) =>
             log.debug "", @server_config.Tables.length, "tables created"
             callback(err)
 
     Perform: () =>
+        log.info "Perform called"
         async.series [
             @Connect,
             @CreateImportFunction,
@@ -99,6 +107,6 @@ class Configurator
             @CreateTables
         ], (err, results) ->
             if err
-                log.error err
+                log.error "Error happened in perform", V_(err)
 
 module.exports = Configurator
