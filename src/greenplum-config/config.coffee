@@ -11,8 +11,9 @@ class Config
             PROTO_FILE: "../common/proto/meta_data.pb.desc"
         MAX_CHUNK_SIZE: 100000
         CLOSE_MESSAGE: "close"
-        POSTGRES_CONNECTION: "postgres://localhost/vagrant"
-        SHARED_OBJECT_PATH: "/home/szhuber/u501/virtdb-enterprise/out/Debug/obj.target/libgreenplum_ext.so"
+        POSTGRES_CONNECTION: "postgres://gpadmin:manager@192.168.221.11:5432/gpadmin"
+        SHARED_OBJECT_PATH: "/usr/local/libgreenplum_ext.so"
+        # SHARED_OBJECT_PATH: "/home/szhuber/u501/virtdb-enterprise/out/Debug/obj.target/libgreenplum_ext.so"
     @Error:
         Duplicate_Object: '42710'
 

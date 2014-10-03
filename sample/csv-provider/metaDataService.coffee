@@ -34,6 +34,7 @@ class MetaDataService
                         return
                     current_table =
                         Name: table_name
+                        Schema: @schema
                         Fields: []
                     first_row = true
 

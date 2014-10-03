@@ -1,21 +1,26 @@
 CONST = require("./config").Const
-argv = require('minimist')(process.argv.slice(2))
 Configurator = require './configurator'
 VirtDBConnector = require 'virtdb-connector'
 Protocol = require './protocol'
 log = VirtDBConnector.log
+V_ = log.Variable
+argv = require('minimist')(process.argv.slice(2))
 
 class GreenplumConfig
 
-    constructor: (@name, svcConfigAddress) ->
-        VirtDBConnector.connect(@name, svcConfigAddress)
+    constructor: (@name, @svcConfigAddress) ->
+        VirtDBConnector.connect(@name, @svcConfigAddress)
 
     listen: () =>
         VirtDBConnector.onIP () =>
             VirtDBConnector.setupEndpoint @name, Protocol.DBConfigServer, @_onMessage
 
     _onMessage: (serverConfig) =>
-        new Configurator(serverConfig).Perform()
+        log.info "Got serverConfig"
+        try
+            new Configurator(serverConfig, @svcConfigAddress).Perform()
+        catch e
+            log.error "Caught exception", V_(e)
 
 console.log "Arguments got:", argv
 greenplumConfig = new GreenplumConfig(argv['name'], argv['url'])
