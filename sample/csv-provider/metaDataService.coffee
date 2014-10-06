@@ -15,6 +15,8 @@ class MetaDataService
     constructor: (request, @sendData) ->
         @schema = request.Schema
         @regexp = request.Name
+        @regexp = '^' + @regexp if @regexp[0] is not '^'
+        @regexp = @regexp + '$' if @regexp[@regexp.length - 1] is not '$' 
         @withFields = request.WithFields
         log.info V_(@withFiels)
 
