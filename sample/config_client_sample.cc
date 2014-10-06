@@ -68,9 +68,8 @@ int main(int argc, char ** argv)
       return true;
     },1000);
 
-    auto cfgdata = cfg_req.mutable_configdata();
+    auto cfgdata = cfg_req.add_configdata();
     cfgdata->set_key("Hello");
-
     
     for( int i=0;i<4;++i )
     {

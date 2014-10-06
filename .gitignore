@@ -44,6 +44,8 @@ wipe-me
 # Xcode / OSX
 *.xcodeproj
 *.DS_Store
+._*.cc
+._*.hh
 
 # generated / 3rd party
 include/node
