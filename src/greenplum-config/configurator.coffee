@@ -85,7 +85,10 @@ class Configurator
             when 'TIME'
                 "TIME"
             else
-                "VARCHAR"
+                if field.Desc.Length?
+                    "VARCHAR(#{field.Desc.Length})"
+                else
+                    "VARCHAR"
 
     CreateTables: (callback) =>
         async.each @server_config.Tables, (table, tables_callback) =>
