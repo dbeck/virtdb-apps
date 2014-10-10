@@ -16,14 +16,17 @@ class Configurator
     constructor: (@server_config, @config_service_url) ->
         return
 
+    FullTableName: (table) =>
+        "\"#{@server_config.Name}_#{table.Schema}\".\"#{table.Name}\""
+
     Query: (query, callback) =>
         log.info "query", V_(query)
         @postgres.query query, (err, result) =>
             @done()
             if err
-                callback err
+                callback? err
                 return
-            callback()
+            callback?()
 
     Connect: (callback) =>
         log.info "Connect called"
@@ -58,7 +61,7 @@ class Configurator
 
     DropTables: (callback) =>
         async.each @server_config.Tables, (table, tables_callback) =>
-            q_drop_table = "DROP EXTERNAL TABLE IF EXISTS #{table.Name} CASCADE"
+            q_drop_table = "DROP EXTERNAL TABLE IF EXISTS #{@FullTableName(table)} CASCADE"
             @Query q_drop_table, tables_callback
         , (err) =>
             log.debug "", @server_config.Tables.length, "tables dropped"
@@ -90,17 +93,27 @@ class Configurator
                 else
                     "VARCHAR"
 
+    CreateSchema: (callback) =>
+        async.each @server_config.Tables, (table, tables_callback) =>
+            q_create_schema = "CREATE SCHEMA \"#{@server_config.Name}_#{table.Schema}\""
+            @Query q_create_schema, (err) =>
+                tables_callback()
+        , (err) =>
+            log.debug "", @server_config.Tables.length, "schemas created"
+            callback(err)
+
+
+
     CreateTables: (callback) =>
         async.each @server_config.Tables, (table, tables_callback) =>
             q_create_table = "
-                CREATE EXTERNAL TABLE #{table.Name} (
+                CREATE EXTERNAL TABLE #{@FullTableName(table)} (
             "
             for field in table.Fields
                 q_create_table += "\"#{field.Name}\" #{@PostgresType(field)}, "
 
             q_create_table = q_create_table.substring(0, q_create_table.length - 2)
             q_create_table += ") location ('virtdb://#{@config_service_url};#{@server_config.Name};#{table.Schema};#{table.Name}') format 'text' (delimiter E'\\001' null '' escape E'\\002') encoding 'UTF8'"
-            # q_create_table += ") location ('virtdb://#{@config_service_url};#{@server_config.Name};#{table.Schema};#{table.Name}') format 'csv' (delimiter E'\\001')"
             @Query q_create_table, tables_callback
         , (err) =>
             log.debug "", @server_config.Tables.length, "tables created"
@@ -110,7 +123,7 @@ class Configurator
         async.each @server_config.Tables, (table, tables_callback) =>
             if table.Comments?.length > 0
                 comment = table.Comments[0]
-                q_table_comment = "COMMENT ON TABLE #{table.Name} IS '#{comment.Text}'"
+                q_table_comment = "COMMENT ON TABLE #{@FullTableName(table)} IS '#{comment.Text}'"
                 @Query q_table_comment, tables_callback
             else
                 tables_callback()
@@ -123,7 +136,7 @@ class Configurator
             async.each table.Fields, (field, fields_callback) =>
                 if field.Comments?
                     comment = field.Comments[0]
-                    q_comment = "COMMENT ON COLUMN #{table.Name}.\"#{field.Name}\" IS '#{comment.Text}'"
+                    q_comment = "COMMENT ON COLUMN #{@FullTableName(table)}.\"#{field.Name}\" IS '#{comment.Text}'"
                     @Query q_comment, fields_callback
                 else
                     fields_callback()
@@ -141,6 +154,7 @@ class Configurator
             @DropProtocol,
             @CreateProtocol,
             @DropTables,
+            @CreateSchema,
             @CreateTables,
             @AddTableComments
             @AddFieldComments
