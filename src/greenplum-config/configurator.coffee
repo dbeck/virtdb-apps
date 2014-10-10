@@ -106,7 +106,19 @@ class Configurator
             log.debug "", @server_config.Tables.length, "tables created"
             callback(err)
 
-    AddComments: (callback) =>
+    AddTableComments: (callback) =>
+        async.each @server_config.Tables, (table, tables_callback) =>
+            if table.Comments?.length > 0
+                comment = table.Comments[0]
+                q_table_comment = "COMMENT ON TABLE #{table.Name} IS '#{comment.Text}'"
+                @Query q_table_comment, tables_callback
+            else
+                tables_callback()
+        , (err) =>
+            log.debug "comment added"
+            callback(err)
+
+    AddFieldComments: (callback) =>
         async.each @server_config.Tables, (table, tables_callback) =>
             async.each table.Fields, (field, fields_callback) =>
                 if field.Comments?
@@ -130,7 +142,8 @@ class Configurator
             @CreateProtocol,
             @DropTables,
             @CreateTables,
-            @AddComments
+            @AddTableComments
+            @AddFieldComments
         ], (err, results) ->
             if err
                 log.error "Error happened in perform", V_(err)
