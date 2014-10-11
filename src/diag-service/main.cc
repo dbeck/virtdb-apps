@@ -37,6 +37,9 @@ int main(int argc, char ** argv)
     
     while( true )
     {
+      // cleanup logs older than 1H
+      // TODO : make this configurable
+      log_svr.cleanup_older_than(3600000);
       std::this_thread::sleep_for(std::chrono::seconds(60));
       LOG_TRACE("alive");
     }
