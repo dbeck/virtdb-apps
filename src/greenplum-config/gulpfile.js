@@ -32,7 +32,7 @@ gulp.task('coffee', function() {
         .pipe(gulp.dest('./out'))
 });
 
-gulp.task('watch', function()
+gulp.task('watch', ['coffee'], function()
 {
     gulp.watch(['./*.coffee'], ['coffee']);
     gulp.watch(['out/index.js'], function() {
@@ -40,4 +40,9 @@ gulp.task('watch', function()
     })
 });
 
-gulp.task('default', ['coffee', 'watch', 'server']);
+gulp.task('default', ['watch']);
+
+process.on("SIGINT", function () {
+    node.kill();
+    process.exit();
+});
