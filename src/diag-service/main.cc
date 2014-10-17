@@ -41,7 +41,7 @@ int main(int argc, char ** argv)
       // TODO : make this configurable
       log_svr.cleanup_older_than(3600000);
       std::this_thread::sleep_for(std::chrono::seconds(60));
-      LOG_TRACE("alive");
+      LOG_TRACE("alive" << V_(log_svr.cached_log_count()));
     }
   }
   catch (const std::exception & e)
