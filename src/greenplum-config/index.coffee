@@ -63,14 +63,14 @@ class GreenplumConfig
                 Scope: 'Extension'
                 Required: true
             ]
-        configToSend = VirtDBConnector.ConfigService.ConvertTemplateToOld configTemplate
+        configToSend = VirtDBConnector.Convert.TemplateToOld configTemplate
         Protocol.SendConfig address, configToSend
 
     onConfig: (config...) =>
         configParsed = Protocol.ParseConfig config[1]
         if configParsed?
-            newConfig = VirtDBConnector.ConfigService.ConvertToNew configParsed
-            configObject = VirtDBConnector.ConfigService.ConvertToObject newConfig
+            newConfig = VirtDBConnector.Convert.ToNew configParsed
+            configObject = VirtDBConnector.Convert.ToObject newConfig
             console.log util.inspect configObject, { depth: null}
             # filledConfig =
             #     Postgres:
