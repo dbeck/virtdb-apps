@@ -71,8 +71,17 @@ class Configurator
         @_Perform current, =>
             @working = false
 
+    _SchemaName: (table) =>
+        if @filledConfig?.Preferences?.IgnoreSchema or not table.Schema?
+            "\"#{@server_config.Name}\""
+        else
+            "\"#{@server_config.Name}_#{table.Schema}\""
+
+    _TableName: (table) =>
+        "\"#{table.Name}\""
+
     _FullTableName: (table) =>
-        "\"#{@server_config.Name}_#{table.Schema}\".\"#{table.Name}\""
+        "#{@_SchemaName(table)}.#{@_TableName(table)}"
 
     _Query: (query, callback) =>
         log.info "query", V_(query)
@@ -157,7 +166,7 @@ class Configurator
     _CreateSchema: (callback) =>
         log.info "In create schema"
         async.each @server_config.Tables, (table, tables_callback) =>
-            q_create_schema = "CREATE SCHEMA \"#{@server_config.Name}_#{table.Schema}\""
+            q_create_schema = "CREATE SCHEMA #{@_SchemaName(table)}"
             @_Query q_create_schema, (err) =>
                 tables_callback()
         , (err) =>
