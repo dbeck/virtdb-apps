@@ -13,7 +13,7 @@ class Configurator
     postgres: null
     server_config: null
     done: null
-    filledConfig: {}
+    filledConfig: null
     queue: []
     timeout: null
     working: false
@@ -25,6 +25,9 @@ class Configurator
         return
 
     add: (server_config) =>
+        if not @filledConfig?
+            log.error "Greenplum configurator is not yet configured."
+            return
         @queue.push server_config
         if not @timeout
             @timeout = setInterval @_work, 100
@@ -157,6 +160,8 @@ class Configurator
                 "DATE"
             when 'TIME'
                 "TIME"
+            when "DATETIME"
+                "TIMESTAMP"
             else
                 if field.Desc.Length?
                     "VARCHAR(#{field.Desc.Length})"
