@@ -32,10 +32,13 @@ class Protocol
         catch ex
             console.log "Error during sending config query reply!", ex
 
-    @SendConfig = (address, config) =>
+    @SendConfig = (address, config, replyHandler) =>
         try
             templateSocket = zmq.socket "req"
             templateSocket.connect address
+            templateSocket.on "message", (replyProto) =>
+                reply = serviceConfigProto.parse replyProto, "virtdb.interface.pb.Config"
+                replyHandler? reply
             templateSocket.send serviceConfigProto.serialize config, "virtdb.interface.pb.Config"
         catch ex
             console.log "Error during sending config!", ex

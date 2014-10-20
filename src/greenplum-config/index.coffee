@@ -8,15 +8,25 @@ util = require 'util'
 argv = require('minimist')(process.argv.slice(2))
 
 class GreenplumConfig
+    @empty: null
 
     constructor: (@name, @svcConfigAddress) ->
-        console.log "GreenplumConfig ctr"
-        VirtDBConnector.onAddress 'CONFIG', 'REQ_REP', @sendConfigTemplate
+        VirtDBConnector.onAddress 'CONFIG', 'REQ_REP', @sendEmptyConfigTemplate
         VirtDBConnector.subscribe 'CONFIG', 'PUB_SUB', @onConfig, @name
         VirtDBConnector.connect(@name, @svcConfigAddress)
 
-    sendConfigTemplate: (name, address) =>
+    sendEmptyConfigTemplate: (name, address) =>
+        @empty =
+            AppName: @name
         console.log "Got address for CONFIG REQ_REP", name, address
+        configToSend = VirtDBConnector.Convert.TemplateToOld @empty
+        Protocol.SendConfig address, configToSend, (reply) =>
+            if not reply.ConfigData? or reply.ConfigData.length == 0
+                @sendConfigTemplate address
+            else
+                @connect reply
+
+    sendConfigTemplate: (address) =>
         configTemplate =
             AppName: @name
             Config: [
@@ -61,13 +71,16 @@ class GreenplumConfig
         configToSend = VirtDBConnector.Convert.TemplateToOld configTemplate
         Protocol.SendConfig address, configToSend
 
-    onConfig: (config...) =>
-        configParsed = Protocol.ParseConfig config[1]
-        if configParsed?
-            newConfig = VirtDBConnector.Convert.ToNew configParsed
+    connect: (config) =>
+        if config?
+            newConfig = VirtDBConnector.Convert.ToNew config
             configObject = VirtDBConnector.Convert.ToObject newConfig
-            console.log util.inspect configObject, { depth: null}
-            Configurator.getInstance().connect @svcConfigAddress, @name, configObject
+            if configObject?.Postgres?
+                Configurator.getInstance().connect @svcConfigAddress, @name, configObject
+
+
+    onConfig: (config...) =>
+        @connect Protocol.ParseConfig config[1]
 
     listen: () =>
         VirtDBConnector.onIP () =>
@@ -76,18 +89,16 @@ class GreenplumConfig
 
     _onMessage: (serverConfig) =>
         try
-            console.log "onMessage", serverConfig
             new Configurator.getInstance().add serverConfig
         catch e
-            console.log "Caught exception", e
+            log.error "Caught exception", e
 
     _onQuery: (configQuery) =>
         try
-            console.log configQuery
             Configurator.getInstance().queryConfig configQuery, (reply) ->
                 Protocol.SendConfigQueryReply reply
         catch e
-            console.log "Caught exception", e
+            log.error "Caught exception", e
 
 console.log "Arguments got:", argv
 greenplumConfig = new GreenplumConfig argv['name'], argv['url']
@@ -101,7 +112,7 @@ terminate = ->
         if Protocol.DBConfigSocket?
             Protocol.DBConfigSocket.close()
     catch e
-        console.log e
+        log.error e
     process.exit()
 
 process.on "SIGINT", terminate
