@@ -48,10 +48,15 @@ class GreenplumConfig
                 Required: false
             ,
                 VariableName: 'Path'
-                Scope: 'GLOBAL'
                 Type: 'STRING'
                 Scope: 'Extension'
                 Required: true
+            ,
+                VariableName: 'IgnoreSchema'
+                Type: 'BOOL'
+                Scope: 'Preferences'
+                Required: false
+                Default: false
             ]
         configToSend = VirtDBConnector.Convert.TemplateToOld configTemplate
         Protocol.SendConfig address, configToSend
