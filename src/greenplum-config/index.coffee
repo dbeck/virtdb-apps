@@ -14,16 +14,6 @@ class GreenplumConfig
         VirtDBConnector.onAddress 'CONFIG', 'REQ_REP', @sendConfigTemplate
         VirtDBConnector.subscribe 'CONFIG', 'PUB_SUB', @onConfig, @name
         VirtDBConnector.connect(@name, @svcConfigAddress)
-        # filledConfig =
-        #     Postgres:
-        #         Host: '192.168.221.11'
-        #         Port: 5432
-        #         Catalog: 'gpadmin'
-        #         User: 'gpadmin'
-        #         Password: 'manager'
-        #     Extension:
-        #         Path: '/usr/local/libgreenplum_ext.so'
-        # Configurator.getInstance().connect @svcConfigAddress, @name, filledConfig
 
     sendConfigTemplate: (name, address) =>
         console.log "Got address for CONFIG REQ_REP", name, address
@@ -72,14 +62,6 @@ class GreenplumConfig
             newConfig = VirtDBConnector.Convert.ToNew configParsed
             configObject = VirtDBConnector.Convert.ToObject newConfig
             console.log util.inspect configObject, { depth: null}
-            # filledConfig =
-            #     Postgres:
-            #         Host: '192.168.221.11'
-            #         Port: 5432
-            #         Catalog: 'gpadmin'
-            #         User: 'gpadmin'
-            #         Password: 'manager'
-            #     SharedObjectPath: '/usr/local/libgreenplum_ext.so'
             Configurator.getInstance().connect @svcConfigAddress, @name, configObject
 
     listen: () =>
@@ -105,13 +87,6 @@ class GreenplumConfig
 console.log "Arguments got:", argv
 greenplumConfig = new GreenplumConfig argv['name'], argv['url']
 greenplumConfig.listen()
-
-# testObject =
-#   Name: ""
-#   SkipTables: false
-#   SkipFields: true
-#
-# greenplumConfig._onQuery testObject
 
 #
 # On exit close the sockets

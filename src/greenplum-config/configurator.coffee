@@ -16,16 +16,15 @@ class Configurator
     filledConfig: {}
     queue: []
     timeout: null
+    working: false
 
     @getInstance: () =>
         @instance ?= new Configurator()
 
     connect: (@config_service_url, @appName, @filledConfig) ->
-        console.log "Connected"
         return
 
     add: (server_config) =>
-        console.log "Adding", server_config
         @queue.push server_config
         if not @timeout
             @timeout = setInterval @_work, 100
@@ -65,9 +64,12 @@ class Configurator
             clearInterval @timeout
             @timeout = null
             return
+        if @working
+            return
+        @working = true
         current = @queue.shift()
-        console.log "_Perform", current
-        @_Perform current
+        @_Perform current, =>
+            @working = false
 
     _FullTableName: (table) =>
         "\"#{@server_config.Name}_#{table.Schema}\".\"#{table.Name}\""
@@ -83,7 +85,6 @@ class Configurator
 
     _Connect: (callback) =>
         pgconf = @filledConfig.Postgres
-        console.log pgconf
         connectionString = "postgres://#{pgconf.User}:#{pgconf.Password}@#{pgconf.Host}:#{pgconf.Port}/#{pgconf.Catalog}"
         log.info "_Connect called", V_(connectionString)
         pg.connect connectionString, (err, client, @done) =>
@@ -95,7 +96,6 @@ class Configurator
 
     _QueryExternalTables: (callback) =>
         q_get_external_tables = "SELECT location[1] FROM PG_EXTTABLE WHERE location[1] like 'virtdb://#{@config_service_url};#{@queriedProvider}%'"
-        console.log q_get_external_tables
         @_Query q_get_external_tables, callback
 
     _CreateImportFunction: (callback) =>
@@ -190,7 +190,7 @@ class Configurator
             else
                 tables_callback()
         , (err) =>
-            log.debug "comment added"
+            log.debug "table comment added"
             callback(err)
 
     _AddFieldComments: (callback) =>
@@ -205,10 +205,10 @@ class Configurator
             , (err) =>
                 tables_callback(err)
         , (err) =>
-            log.debug "comment added"
+            log.debug "field comment added"
             callback(err)
 
-    _Perform: (@server_config) =>
+    _Perform: (@server_config, done) =>
         log.info "_Perform called"
         async.series [
             @_Connect,
@@ -223,5 +223,6 @@ class Configurator
         ], (err, results) ->
             if err
                 log.error "Error happened in perform", V_(err)
+            done()
 
 module.exports = Configurator
