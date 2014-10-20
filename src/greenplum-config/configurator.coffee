@@ -157,6 +157,8 @@ class Configurator
                 "DATE"
             when 'TIME'
                 "TIME"
+            when "DATETIME"
+                "TIMESTAMP"
             else
                 if field.Desc.Length?
                     "VARCHAR(#{field.Desc.Length})"
