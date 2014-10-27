@@ -82,6 +82,37 @@
       'sources':           [ 'src/config-service/main.cc', ],
     },
     {
+      'target_name':       'save-configs',
+      'type':              'executable',
+      'dependencies':      [ 'src/common/common.gyp:common', ],
+      'sources':           [ 'src/save-configs/main.cc', ],
+    },
+    {
+      'target_name':       'load-config',
+      'type':              'executable',
+      'dependencies':      [ 'src/common/common.gyp:common', ],
+      'sources':           [ 'src/load-config/main.cc', ],
+    },
+    {
+      'target_name':       'remove-endpoint',
+      'type':              'executable',
+      'dependencies':      [ 'src/common/common.gyp:common', ],
+      'sources':           [ 'src/remove-endpoint/main.cc', ],
+    },
+    {
+      'target_name':       'save-endpoints',
+      'type':              'executable',
+      'dependencies':      [ 'src/common/common.gyp:common', ],
+      'sources':           [ 'src/save-endpoints/main.cc', ],
+    },
+    {
+      'target_name':       'load-endpoint',
+      'type':              'executable',
+      'dependencies':      [ 'src/common/common.gyp:common', ],
+      'sources':           [ 'src/load-endpoint/main.cc', ],
+    },
+
+    {
       'target_name':       'testdata-provider',
       'type':              'executable',
       'dependencies':      [ 'src/common/common.gyp:common', ],
