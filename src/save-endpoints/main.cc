@@ -62,7 +62,7 @@ int main(int argc, char ** argv)
       
       auto process_endpoint = [&](const pb::EndpointData & ep) {
         LOG_TRACE(" " << V_(ep.name()) << V_(ep.connections_size()));
-        std::string file_name{path + '/' + ep.name() + ".pbep"};
+        std::string file_name{path + '/' + ep.name() + ".pbep" + '-' + pb::ServiceType_Name(ep.svctype())};
         std::ofstream outfile{file_name};
         if( outfile.is_open() )
         {
