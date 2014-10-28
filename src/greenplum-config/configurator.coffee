@@ -174,6 +174,8 @@ class Configurator
                 "TIME"
             when "DATETIME"
                 "TIMESTAMP"
+            when "BYTES"
+                "BYTEA"
             else
                 if field.Desc.Length?
                     "VARCHAR(#{field.Desc.Length})"
