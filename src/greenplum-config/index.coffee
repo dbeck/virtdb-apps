@@ -67,6 +67,12 @@ class GreenplumConfig
                 Scope: 'Preferences'
                 Required: false
                 Default: false
+            ,
+                VariableName: 'QueryTimeout'
+                Type: 'UINT32'
+                Scope: 'Preferences'
+                Required: false
+                Default: 3000
             ]
         configToSend = VirtDBConnector.Convert.TemplateToOld configTemplate
         Protocol.SendConfig address, configToSend
