@@ -7,6 +7,7 @@
 #include <fstream>
 #include <set>
 
+using namespace virtdb;
 using namespace virtdb::util;
 using namespace virtdb::connector;
 using namespace virtdb::interface;
@@ -35,13 +36,23 @@ int main(int argc, char ** argv)
     {
       THROW_("invalid number of arguments");
     }
+    std::string config_svc{argv[1]};
     std::string path{argv[2]};
     
-    endpoint_client     ep_clnt(argv[1],  "save-endpoints");
+    endpoint_client     ep_clnt(config_svc,  "save-endpoints");
     log_record_client   log_clnt(ep_clnt, "diag-service");
     
-    log_clnt.wait_valid_push();
-    LOG_INFO("log connected");
+    logger::log_sink::socket_sptr dummy_socket;
+    logger::log_sink::sptr        sink_stderr;
+    
+    if( log_clnt.wait_valid_push(util::DEFAULT_TIMEOUT_MS) )
+    {
+      LOG_INFO("log connected");
+    }
+    else
+    {
+      sink_stderr.reset(new logger::log_sink{dummy_socket});
+    }
     
     {
       // gather endpointa

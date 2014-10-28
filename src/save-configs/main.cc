@@ -7,6 +7,7 @@
 #include <fstream>
 #include <set>
 
+using namespace virtdb;
 using namespace virtdb::util;
 using namespace virtdb::connector;
 using namespace virtdb::interface;
@@ -23,7 +24,7 @@ namespace
               << " endpoint examples: \n"
               << "  \"ipc:///tmp/cfg-endpoint\"\n"
               << "  \"tcp://localhost:65001\"\n\n";
-             return 100;
+    return 100;
   }
 }
 
@@ -35,17 +36,36 @@ int main(int argc, char ** argv)
     {
       THROW_("invalid number of arguments");
     }
+    std::string config_svc{argv[1]};
     std::string path{argv[2]};
     
-    endpoint_client     ep_clnt(argv[1],  "save-configs");
+    endpoint_client     ep_clnt(config_svc,  "save-configs");
     log_record_client   log_clnt(ep_clnt, "diag-service");
     config_client       cfg_clnt(ep_clnt, "config-service");
     
-    log_clnt.wait_valid_push();
-    LOG_INFO("log connected");
+    logger::log_sink::socket_sptr dummy_socket;
+    logger::log_sink::sptr        sink_stderr;
     
-    cfg_clnt.wait_valid_sub();
-    cfg_clnt.wait_valid_req();
+    if( log_clnt.wait_valid_push(util::DEFAULT_TIMEOUT_MS) )
+    {
+      LOG_INFO("log connected");
+    }
+    else
+    {
+      sink_stderr.reset(new logger::log_sink{dummy_socket});
+    }
+
+    if( !cfg_clnt.wait_valid_sub(10000) )
+    {
+      LOG_ERROR("failed to connect to config service at" << V_(config_svc));
+      THROW_("cannot connect to config service");
+    }
+    if( !cfg_clnt.wait_valid_req(10000) )
+    {
+      LOG_ERROR("failed to connect to config service at" << V_(config_svc));
+      THROW_("cannot connect to config service");
+    }
+    
     LOG_INFO("config client connected");
     
     std::set<std::string> services;
