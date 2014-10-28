@@ -43,20 +43,23 @@ int main(int argc, char ** argv)
     req.set_name(table_name);
     req.set_withfields(false);
     
-    meta_clnt.send_request(req,
-                           [](const pb::MetaData & rep) {
-                             std::cout << "MetaData reply:\n" << rep.DebugString() << "\n";
-                             return true;
-                           },
-                           30000);
+    bool meta_ret = meta_clnt.send_request(req,
+                                           [](const pb::MetaData & rep) {
+                                             LOG_TRACE("MetaData reply" << M_(rep));
+                                     return true;
+                                     },30000);
 
+    LOG_TRACE("without fields" << V_(meta_ret));
+    
     req.set_withfields(true);
-    meta_clnt.send_request(req,
-                           [](const pb::MetaData & rep) {
-                             std::cout << "MetaData reply:\n" << rep.DebugString() << "\n";
-                             return true;
-                           },
-                           99000);
+    meta_ret =
+      meta_clnt.send_request(req,
+                             [](const pb::MetaData & rep) {
+                                LOG_TRACE("MetaData reply" << M_(rep));
+                                return true;
+                               },99000);
+    
+    LOG_TRACE("with fields" << V_(meta_ret));
     
     pb::Query query;
     query.set_queryid("1");
