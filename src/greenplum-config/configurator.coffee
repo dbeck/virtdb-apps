@@ -88,12 +88,24 @@ class Configurator
 
     _Query: (query, callback) =>
         log.info "query", V_(query)
+        timedOut = false
+        @filledConfig.Preferences.QueryTimeout ?= 3000
+        queryTimeout = setTimeout () =>
+            timedOut = true
+            log.info "Could not process query in time, cancelling"
+            newpg = new pg.Client({ port: @postgres.port, host: @postgres.host})
+            newpg.cancel query
+            log.info "Cancel sent."
+            callback(new Error("Query timed out"))
+        , @filledConfig.Preferences.QueryTimeout
         @postgres.query query, (err, result) =>
-            @done()
-            if err
-                callback? err
-                return
-            callback?(err, result)
+            if not timedOut
+                clearTimeout queryTimeout
+                @done()
+                if err
+                    callback? err
+                    return
+                callback?(err, result)
 
     _Connect: (callback) =>
         pgconf = @filledConfig.Postgres
@@ -222,21 +234,29 @@ class Configurator
             log.debug "field comment added"
             callback(err)
 
-    _Perform: (@server_config, done) =>
-        log.info "_Perform called"
-        async.series [
-            @_Connect,
-            @_CreateImportFunction,
-            @_DropProtocol,
-            @_CreateProtocol,
-            @_DropTables,
-            @_CreateSchema,
-            @_CreateTables,
-            @_AddTableComments
-            @_AddFieldComments
-        ], (err, results) ->
+    _Perform: (@server_config, perform_done) =>
+        log.info "Connecting to Postgres."
+        pgconf = @filledConfig.Postgres
+        connectionString = "postgres://#{pgconf.User}:#{pgconf.Password}@#{pgconf.Host}:#{pgconf.Port}/#{pgconf.Catalog}"
+        pg.connect connectionString, (err, client, @done) =>
             if err
-                log.error "Error happened in perform", V_(err)
-            done()
+                log.error "Error while connecting to postgres server", V_(err)
+                perform_done()
+                return
+            @postgres = client
+            async.series [
+                @_CreateImportFunction,
+                @_DropProtocol,
+                @_CreateProtocol,
+                @_DropTables,
+                @_CreateSchema,
+                @_CreateTables,
+                @_AddTableComments
+                @_AddFieldComments
+            ], (err, results) =>
+                if err
+                    log.error "Error happened in perform", V_(err)
+                done()
+                perform_done()
 
 module.exports = Configurator
