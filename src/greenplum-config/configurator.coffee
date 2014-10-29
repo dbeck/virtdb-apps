@@ -119,7 +119,7 @@ class Configurator
             callback(err)
 
     _QueryExternalTables: (callback) =>
-        q_get_external_tables = "SELECT location[1] FROM PG_EXTTABLE WHERE location[1] like 'virtdb://#{@config_service_url};#{@queriedProvider}%'"
+        q_get_external_tables = "SELECT location[1] FROM PG_EXTTABLE WHERE location[1] like 'virtdb://#{@config_service_url};#{@queriedProvider};%'"
         @_Query q_get_external_tables, callback
 
     _CreateImportFunction: (callback) =>
