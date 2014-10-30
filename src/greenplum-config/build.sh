@@ -1,13 +1,19 @@
 #!/bin/bash
 GPCONFIG_PATH="src/greenplum-config"
 NODE_CONNECTOR_PATH="src/common/node-connector"
+RELEASE_PATH="release"
 
 function release {
   echo "release"
   pushd $GPCONFIG_PATH
   VERSION=`npm version patch`
   popd
-  tar -czvf gpconfig-$VERSION.tar.gz -C $GPCONFIG_PATH .
+  mkdir -f $RELEASE_PATH
+  cp -R $GPCONFIG_PATH $RELEASE_PATH
+  mkdir -f $RELEASE_PATH/lib
+  cp /usr/lib64/libzmq.so.3 $RELEASE_PATH/lib 
+  cp /usr/local/lib/libprotobuf.so.9 $RELEASE_PATH/lib
+  tar -czvf gpconfig-$VERSION.tar.gz -C $RELEASE_PATH .
 }
 
 function clear_connector {
