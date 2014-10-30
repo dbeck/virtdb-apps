@@ -24,8 +24,10 @@ function clear_greenplum_config {
 
 [[ ${1,,} == "release" ]] && RELEASE=true || RELEASE=false
 
-gyp --depth=. apps.gyp
+pushd src/common/proto
+gyp --depth=. proto.gyp
 make
+popd
 
 echo "Building node-connector"
 [[ $RELEASE == true ]] && clear_connector
