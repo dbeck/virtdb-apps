@@ -24,8 +24,7 @@ function clear_greenplum_config {
 
 [[ ${1,,} == "release" ]] && RELEASE=true || RELEASE=false
 
-./pull.sh
-
+git submodule update --init --recursive
 pushd src/common/proto
 gyp --depth=. proto.gyp
 make
@@ -42,7 +41,11 @@ echo "Building greenplum-config"
 pushd $GPCONFIG_PATH
 [[ $RELEASE == true ]] && clear_greenplum_config 
 npm install
+echo "Node connector:"
+ls ../common/node-connector
 npm install ../common/node-connector
+echo "virtdb-connector"
+ls node_modules/virtdb-connector
 node_modules/gulp/bin/gulp.js build
 popd
 
