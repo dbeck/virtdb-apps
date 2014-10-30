@@ -7,7 +7,7 @@ function release {
   pushd $GPCONFIG_PATH
   VERSION=`npm version patch`
   popd
-  tar -czvf gpconfig-$VERSION.tar.gz $GPCONFIG_PATH
+  tar -czvf gpconfig-$VERSION.tar.gz -C $GPCONFIG_PATH .
 }
 
 function clear_connector {
@@ -23,6 +23,8 @@ function clear_greenplum_config {
 }
 
 [[ ${1,,} == "release" ]] && RELEASE=true || RELEASE=false
+
+./pull.sh
 
 pushd src/common/proto
 gyp --depth=. proto.gyp
