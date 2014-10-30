@@ -8,9 +8,9 @@ function release {
   pushd $GPCONFIG_PATH
   VERSION=`npm version patch`
   popd
-  mkdir -f $RELEASE_PATH
+  mkdir -p $RELEASE_PATH
   cp -R $GPCONFIG_PATH $RELEASE_PATH
-  mkdir -f $RELEASE_PATH/lib
+  mkdir -p $RELEASE_PATH/lib
   cp /usr/lib64/libzmq.so.3 $RELEASE_PATH/lib 
   cp /usr/local/lib/libprotobuf.so.9 $RELEASE_PATH/lib
   tar -czvf gpconfig-$VERSION.tar.gz -C $RELEASE_PATH .
