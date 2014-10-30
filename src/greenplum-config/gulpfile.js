@@ -40,6 +40,8 @@ gulp.task('watch', ['coffee'], function()
     })
 });
 
+gulp.task('build', ['coffee']);
+
 gulp.task('default', ['watch']);
 
 process.on("SIGINT", function () {
