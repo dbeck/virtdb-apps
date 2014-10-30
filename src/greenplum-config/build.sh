@@ -5,8 +5,9 @@ NODE_CONNECTOR_PATH="src/common/node-connector"
 function release {
   echo "release"
   pushd $GPCONFIG_PATH
-  npm version patch
+  VERSION=`npm version patch`
   popd
+  tar -czvf gpconfig-$VERSION.tar.gz $GPCONFIG_PATH
 }
 
 function clear_connector {
