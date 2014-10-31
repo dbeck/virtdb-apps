@@ -6,7 +6,7 @@ RELEASE_PATH="release"
 function release {
   echo "release"
   pushd $GPCONFIG_PATH
-  VERSION=`npm version patch`
+  VERSION=`npm version`
   popd
   mkdir -p $RELEASE_PATH
   cp -R $GPCONFIG_PATH $RELEASE_PATH
