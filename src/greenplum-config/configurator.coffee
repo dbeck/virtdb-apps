@@ -90,7 +90,7 @@ class PostgresConfigurator
     _Query: (query, callback, ignoreError = false) =>
         # log.info "query", V_(query)
         timedOut = false
-        @filledConfig.Preferences.QueryTimeout ?= 3000
+        @filledConfig.Preferences.QueryTimeout ?= 60000
         queryTimeout = setTimeout () =>
             timedOut = true
             log.info "Could not process query in time, cancelling"
@@ -328,7 +328,7 @@ class GreenplumConfigurator extends PostgresConfigurator
                 q_create_table += "\"#{field.Name}\" #{@_PostgresType(field)}, "
 
             q_create_table = q_create_table.substring(0, q_create_table.length - 2)
-            q_create_table += ") location ('virtdb://#{@config_service_url};#{@config_data.Name};#{table.Schema};#{table.Name}') format 'text' (delimiter E'\\001' null '' escape E'\\002') encoding 'UTF8'"
+            q_create_table += ") location ('virtdb://#{@config_service_url};#{@config_data.Name};#{table.Schema};#{table.Name}') format 'text' (delimiter E'\\001' null '' escape OFF) encoding 'UTF8'"
             @_Query q_create_table, tables_callback
         , (err) =>
             log.debug "", @config_data.Tables.length, "tables created"
