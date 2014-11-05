@@ -5,21 +5,31 @@ async       = require 'async'
 VirtDBConnector = require 'virtdb-connector'
 log = VirtDBConnector.log
 V_ = log.Variable
+util = require "util"
 
 require('source-map-support').install();
 
-class Configurator
+class PostgresConfigurator
     @instance: null
     postgres: null
-    server_config: null
-    done: null
     filledConfig: null
+    done: null
     queue: []
     timeout: null
     working: false
+    config_data: null
+    ConfigQueries: null
+    cica: null
 
-    @getInstance: () =>
-        @instance ?= new Configurator()
+    constructor: () ->
+        @ConfigQueries = [
+            @_CreateExtension
+            @_CreateServer
+            @_DropTables
+            @_CreateTables
+            @_AddTableComments
+            @_AddFieldComments
+        ]
 
     connect: (@config_service_url, @appName, @filledConfig) ->
         return
@@ -30,64 +40,55 @@ class Configurator
             return
         @queue.push server_config
         if not @timeout
-            @timeout = setInterval @_work, 100
+            log.info "Queue exists?", V_(@queue)
+            @timeout = setInterval =>
+                log.info "In _work, queue:", V_(@queue)
+                if @queue.length == 0
+                    clearInterval @timeout
+                    @timeout = null
+                    return
+                if @working
+                    return
+                @working = true
+                current = @queue.shift()
+                @_Perform current, =>
+                    @working = false
+            , 100
 
-    queryConfig: (query, callback) =>
-        @queriedProvider = query.Name
-        async.series [
-            @_Connect,
-            @_QueryExternalTables
-        ], (err, results) ->
-            if err
-                log.error "Error happened in perform", V_(err)
-            reply =
-                Servers: []
-            orderedResults = {}
-            for result in results
-                if result?.rows?
-                    for row in result.rows
-                        meta = {}
-                        value = row.location.split(";")
-                        server_name = value[value.length - 3]
-                        meta.Schema = value[value.length - 2]
-                        meta.Name = value[value.length - 1]
-                        orderedResults[server_name] ?= []
-                        orderedResults[server_name].push meta
-                        # reply.Servers[0].Tables.push meta
-            for serverName, meta of orderedResults
-                server =
-                    Type: ""
-                    Name: serverName
-                    Tables: meta
-                reply.Servers.push server
-            callback reply
 
-    _work: =>
-        if @queue.length == 0
-            clearInterval @timeout
-            @timeout = null
-            return
-        if @working
-            return
-        @working = true
-        current = @queue.shift()
-        @_Perform current, =>
-            @working = false
+    @getInstance: () =>
+        @instance ?= new PostgresConfigurator()
 
-    _SchemaName: (table) =>
-        if @filledConfig?.Preferences?.IgnoreSchema or not table.Schema?
-            "\"#{@server_config.Name}\""
-        else
-            "\"#{@server_config.Name}_#{table.Schema}\""
+    _CreateExtension: (callback) =>
+        @_Query "CREATE EXTENSION IF NOT EXISTS virtdb_fdw", callback
 
-    _TableName: (table) =>
-        "\"#{table.Name}\""
+    _CreateServer: (callback) =>
+        @_Query "CREATE SERVER #{@config_data.Name}_srv foreign data wrapper virtdb_fdw", callback
 
-    _FullTableName: (table) =>
-        "#{@_SchemaName(table)}.#{@_TableName(table)}"
+    _DropTables: (callback) =>
+        async.each @config_data.Tables, (table, tables_callback) =>
+            @_Query "DROP FOREIGN TABLE IF EXISTS #{@_FullTableName(table)} CASCADE", tables_callback
+        , (err) =>
+            log.debug "", @config_data.Tables.length, "tables dropped", V_(err)
+            callback()
 
-    _Query: (query, callback) =>
-        log.info "query", V_(query)
+    _CreateTables: (callback) =>
+        async.each @config_data.Tables, (table, tables_callback) =>
+            q_create_table = "
+                CREATE FOREIGN TABLE #{@_FullTableName(table)} (
+            "
+            for field in table.Fields
+                q_create_table += "\"#{field.Name}\" #{@_PostgresType(field)}, "
+
+            q_create_table = q_create_table.substring(0, q_create_table.length - 2)
+            q_create_table += ") server #{config_data.Name}_srv"
+            @_Query q_create_table, tables_callback
+        , (err) =>
+            log.debug "", @config_data.Tables.length, "tables created"
+            callback(err)
+
+    _Query: (query, callback, ignoreError = false) =>
+        # log.info "query", V_(query)
         timedOut = false
         @filledConfig.Preferences.QueryTimeout ?= 3000
         queryTimeout = setTimeout () =>
@@ -102,55 +103,55 @@ class Configurator
             if not timedOut
                 clearTimeout queryTimeout
                 @done()
+                if ignoreError
+                    err = null
                 if err
                     callback? err
                     return
                 callback?(err, result)
 
-    _Connect: (callback) =>
+    _work: =>
+        log.info "In _work, queue:", V_(@queue)
+        if @queue.length == 0
+            clearInterval @timeout
+            @timeout = null
+            return
+        if @working
+            return
+        @working = true
+        current = @queue.shift()
+        @_Perform current, =>
+            @working = false
+
+    _Perform: (@config_data, perform_done) =>
+        log.info "Connecting to Postgres."
         pgconf = @filledConfig.Postgres
+        @cica = "cicamica"
         connectionString = "postgres://#{pgconf.User}:#{pgconf.Password}@#{pgconf.Host}:#{pgconf.Port}/#{pgconf.Catalog}"
-        log.info "_Connect called", V_(connectionString)
         pg.connect connectionString, (err, client, @done) =>
             if err
-                callback err
+                log.error "Error while connecting to postgres server", V_(err)
+                perform_done()
                 return
             @postgres = client
-            callback(err)
+            log.info "ConfigQueries.lenghth: ", V_(@ConfigQueries.length)
+            async.series @ConfigQueries, (err, results) =>
+                if err
+                    log.error "Error happened in perform", V_(err)
+                done()
+                perform_done()
 
-    _QueryExternalTables: (callback) =>
-        q_get_external_tables = "SELECT location[1] FROM PG_EXTTABLE WHERE location[1] like 'virtdb://#{@config_service_url};#{@queriedProvider};%'"
-        @_Query q_get_external_tables, callback
+    _SchemaName: (table) =>
+        if @filledConfig?.Preferences?.IgnoreSchema or not table.Schema?
+            "\"#{@config_data.Name}\""
+        else
+            "\"#{@config_data.Name}_#{table.Schema}\""
 
-    _CreateImportFunction: (callback) =>
-        log.info "_CreateImportFunction called"
-        q_create_import_function =
-            "CREATE OR REPLACE FUNCTION virtdb_import()
-                RETURNS integer as '#{@filledConfig.Extension.Path}',
-                'virtdb_import' language C stable"
-        @_Query q_create_import_function, callback
+    _TableName: (table) =>
+        "\"#{table.Name}\""
 
-    _DropProtocol: (callback) =>
-        log.info "Drop protocol called"
-        q_drop_protocol = "DROP protocol if exists virtdb;"
-        @_Query q_drop_protocol, callback
-
-    _CreateProtocol: (callback) =>
-        log.info "Create protocol called"
-        q_create_protocol = "
-            CREATE TRUSTED PROTOCOL virtdb (
-                readfunc='virtdb_import'
-            )
-        "
-        @_Query q_create_protocol, callback
-
-    _DropTables: (callback) =>
-        async.each @server_config.Tables, (table, tables_callback) =>
-            q_drop_table = "DROP EXTERNAL TABLE IF EXISTS #{@_FullTableName(table)} CASCADE"
-            @_Query q_drop_table, tables_callback
-        , (err) =>
-            log.debug "", @server_config.Tables.length, "tables dropped", V_(err)
-            callback()
+    _FullTableName: (table) =>
+        "#{@_SchemaName(table)}.#{@_TableName(table)}"
 
     _PostgresType: (field) =>
         switch field.Desc.Type
@@ -182,35 +183,9 @@ class Configurator
                 else
                     "VARCHAR"
 
-    _CreateSchema: (callback) =>
-        log.info "In create schema"
-        async.each @server_config.Tables, (table, tables_callback) =>
-            q_create_schema = "CREATE SCHEMA #{@_SchemaName(table)}"
-            @_Query q_create_schema, (err) =>
-                tables_callback()
-        , (err) =>
-            log.debug "", @server_config.Tables.length, "schemas created"
-            callback(err)
-
-
-
-    _CreateTables: (callback) =>
-        async.each @server_config.Tables, (table, tables_callback) =>
-            q_create_table = "
-                CREATE EXTERNAL TABLE #{@_FullTableName(table)} (
-            "
-            for field in table.Fields
-                q_create_table += "\"#{field.Name}\" #{@_PostgresType(field)}, "
-
-            q_create_table = q_create_table.substring(0, q_create_table.length - 2)
-            q_create_table += ") location ('virtdb://#{@config_service_url};#{@server_config.Name};#{table.Schema};#{table.Name}') format 'text' (delimiter E'\\001' null '' escape E'\\002') encoding 'UTF8'"
-            @_Query q_create_table, tables_callback
-        , (err) =>
-            log.debug "", @server_config.Tables.length, "tables created"
-            callback(err)
-
     _AddTableComments: (callback) =>
-        async.each @server_config.Tables, (table, tables_callback) =>
+        log.info "config_data", V_(@config_data)
+        async.each @config_data.Tables, (table, tables_callback) =>
             if table.Comments?[0]?.Text?
                 comment = table.Comments[0]
                 q_table_comment = "COMMENT ON TABLE #{@_FullTableName(table)} IS '#{comment.Text}'"
@@ -222,7 +197,7 @@ class Configurator
             callback(err)
 
     _AddFieldComments: (callback) =>
-        async.each @server_config.Tables, (table, tables_callback) =>
+        async.each @config_data.Tables, (table, tables_callback) =>
             async.each table.Fields, (field, fields_callback) =>
                 if field.Comments?[0]?.Text?
                     comment = field.Comments[0]
@@ -236,29 +211,127 @@ class Configurator
             log.debug "field comment added"
             callback(err)
 
-    _Perform: (@server_config, perform_done) =>
-        log.info "Connecting to Postgres."
+class GreenplumConfigurator extends PostgresConfigurator
+    constructor: () ->
+        log.info "GreenplumConfigurator ctr"
+        @ConfigQueries = [
+            @_CreateImportFunction
+            # @_DropProtocol
+            @_CreateProtocol
+            @_DropTables
+            @_CreateSchema
+            @_CreateTables
+            @_AddTableComments
+            @_AddFieldComments
+        ]
+
+    _AddTableComments: (callback) =>
+        super(callback)
+
+    _AddFieldComments: (callback) =>
+        super(callback)
+
+    @getInstance: () =>
+        log.info "Getinstance"
+        @instance ?= new GreenplumConfigurator()
+
+    queryConfig: (query, callback) =>
+        @queriedProvider = query.Name
+        async.series [
+            @_Connect,
+            @_QueryExternalTables
+        ], (err, results) ->
+            if err
+                log.error "Error happened in perform", V_(err)
+            reply =
+                Servers: []
+            orderedResults = {}
+            for result in results
+                if result?.rows?
+                    for row in result.rows
+                        meta = {}
+                        value = row.location.split(";")
+                        server_name = value[value.length - 3]
+                        meta.Schema = value[value.length - 2]
+                        meta.Name = value[value.length - 1]
+                        orderedResults[server_name] ?= []
+                        orderedResults[server_name].push meta
+                        # reply.Servers[0].Tables.push meta
+            for serverName, meta of orderedResults
+                server =
+                    Type: ""
+                    Name: serverName
+                    Tables: meta
+                reply.Servers.push server
+            callback reply
+
+    _Connect: (callback) =>
         pgconf = @filledConfig.Postgres
         connectionString = "postgres://#{pgconf.User}:#{pgconf.Password}@#{pgconf.Host}:#{pgconf.Port}/#{pgconf.Catalog}"
+        log.info "_Connect called", V_(connectionString)
         pg.connect connectionString, (err, client, @done) =>
             if err
-                log.error "Error while connecting to postgres server", V_(err)
-                perform_done()
+                callback err
                 return
             @postgres = client
-            async.series [
-                @_CreateImportFunction,
-                @_DropProtocol,
-                @_CreateProtocol,
-                @_DropTables,
-                @_CreateSchema,
-                @_CreateTables,
-                @_AddTableComments
-                @_AddFieldComments
-            ], (err, results) =>
-                if err
-                    log.error "Error happened in perform", V_(err)
-                done()
-                perform_done()
+            callback(err)
 
-module.exports = Configurator
+    _QueryExternalTables: (callback) =>
+        q_get_external_tables = "SELECT location[1] FROM PG_EXTTABLE WHERE location[1] like 'virtdb://#{@config_service_url};#{@queriedProvider};%'"
+        @_Query q_get_external_tables, callback
+
+    _CreateImportFunction: (callback) =>
+        log.info "_CreateImportFunction called"
+        q_create_import_function =
+            "CREATE FUNCTION virtdb_import()
+                RETURNS integer as '#{@filledConfig.Extension.Path}',
+                'virtdb_import' language C stable"
+        @_Query q_create_import_function, (err, results) =>
+            callback()
+
+    _DropProtocol: (callback) =>
+        log.info "Drop protocol called"
+        q_drop_protocol = "DROP protocol if exists virtdb;"
+        @_Query q_drop_protocol, callback
+
+    _CreateProtocol: (callback) =>
+        @_Query "select routine_name from information_schema.routines where specific_name = 'virtdb_import_'||(select ptcreadfn from pg_extprotocol where ptcname = 'virtdb');", (err, results) =>
+            if err or results?.rows?[0]?.routine_name isnt 'virtdb_import'
+                @_Query "CREATE TRUSTED PROTOCOL virtdb ( readfunc='virtdb_import' ) ", callback
+            else
+                callback()
+
+    _DropTables: (callback) =>
+        async.each @config_data.Tables, (table, tables_callback) =>
+            q_drop_table = "DROP EXTERNAL TABLE IF EXISTS #{@_FullTableName(table)} CASCADE"
+            @_Query q_drop_table, tables_callback
+        , (err) =>
+            log.debug "", @config_data.Tables.length, "tables dropped", V_(err)
+            callback()
+
+    _CreateSchema: (callback) =>
+        log.info "In create schema", V_(@config_data)
+        async.each @config_data.Tables, (table, tables_callback) =>
+            q_create_schema = "CREATE SCHEMA #{@_SchemaName(table)}"
+            @_Query q_create_schema, (err) =>
+                tables_callback()
+        , (err) =>
+            log.debug "", @config_data.Tables.length, "schemas created"
+            callback(err)
+
+    _CreateTables: (callback) =>
+        async.each @config_data.Tables, (table, tables_callback) =>
+            q_create_table = "
+                CREATE EXTERNAL TABLE #{@_FullTableName(table)} (
+            "
+            for field in table.Fields
+                q_create_table += "\"#{field.Name}\" #{@_PostgresType(field)}, "
+
+            q_create_table = q_create_table.substring(0, q_create_table.length - 2)
+            q_create_table += ") location ('virtdb://#{@config_service_url};#{@config_data.Name};#{table.Schema};#{table.Name}') format 'text' (delimiter E'\\001' null '' escape E'\\002') encoding 'UTF8'"
+            @_Query q_create_table, tables_callback
+        , (err) =>
+            log.debug "", @config_data.Tables.length, "tables created"
+            callback(err)
+
+module.exports = GreenplumConfigurator
