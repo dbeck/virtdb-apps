@@ -1,6 +1,6 @@
 
 #include <logger.hh>
-#include <util.hh>
+#include <util/exception.hh>
 #include <connector.hh>
 #include <chrono>
 #include <thread>
