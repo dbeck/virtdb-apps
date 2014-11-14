@@ -97,14 +97,14 @@ class GreenplumConfig
         try
             new Configurator.getInstance().add serverConfig
         catch e
-            log.error "Caught exception", e
+            log.error "Caught exception", V_(e)
 
     _onQuery: (configQuery) =>
         try
             Configurator.getInstance().queryConfig configQuery, (reply) ->
                 Protocol.SendConfigQueryReply reply
         catch e
-            log.error "Caught exception", e
+            log.error "Caught exception", V_(e)
 
 console.log "Arguments got:", argv
 greenplumConfig = new GreenplumConfig argv['name'], argv['url']
