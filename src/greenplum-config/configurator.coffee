@@ -284,13 +284,24 @@ class PostgresConfigurator
                 return
 
             q_get_external_tables = "
-                SELECT opt.option_value as schema_name, tbl.foreign_table_name as table_name
-                FROM information_schema.foreign_table_options opt,
-                     information_schema.foreign_tables tbl
-                WHERE opt.foreign_table_schema = tbl.foreign_table_schema
-                 and opt.foreign_table_name = tbl.foreign_table_name
-                 and tbl.foreign_server_name = '#{query.Name}_srv'
-                 and opt.option_name = 'schema'
+                SELECT
+                    opt.option_name,
+                    opt.option_value AS schema_name,
+                    tbl.foreign_table_name AS table_name
+                FROM
+                    information_schema.foreign_table_options opt,
+                    information_schema.foreign_tables tbl
+                WHERE
+                    opt.foreign_table_schema = tbl.foreign_table_schema
+                    AND opt.foreign_table_name = tbl.foreign_table_name
+                    AND tbl.foreign_server_name = '#{query.Name}_srv'
+                    AND
+                        (opt.option_name = 'schema'
+                        or (opt.option_name = 'provider'
+                            and opt.foreign_table_name not in
+			                      (select foreign_table_name
+		                           from information_schema.foreign_table_options opt
+	                               where option_name = 'schema')))
             "
             @_Query q_get_external_tables, (err, result) ->
                 if err
