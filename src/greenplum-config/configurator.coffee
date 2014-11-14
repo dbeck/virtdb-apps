@@ -315,7 +315,8 @@ class PostgresConfigurator
                     for row in result.rows
                         meta = {}
                         server_name = query.Name
-                        meta.Schema = row.schema_name
+                        if row.option_name is 'schema'
+                            meta.Schema = row.schema_name
                         meta.Name = row.table_name
                         orderedResults[server_name] ?= []
                         orderedResults[server_name].push meta
