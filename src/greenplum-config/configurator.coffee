@@ -41,9 +41,7 @@ class PostgresConfigurator
             return
         @queue.push server_config
         if not @timeout
-            log.info "Queue exists?", V_(@queue)
             @timeout = setInterval =>
-                log.info "In _work, queue:", V_(@queue)
                 if @queue.length == 0
                     clearInterval @timeout
                     @timeout = null
@@ -52,6 +50,7 @@ class PostgresConfigurator
                     return
                 @working = true
                 current = @queue.shift()
+                log.info "Starting new task. Queue length: ", V_(@queue.length)
                 @_Perform current, =>
                     @working = false
             , 100
@@ -129,7 +128,7 @@ class PostgresConfigurator
         @filledConfig.Preferences.QueryTimeout ?= 60000
         queryTimeout = setTimeout () =>
             timedOut = true
-            log.info "Could not process query in time, cancelling"
+            log.info "Could not process query in time, cancelling", V_(query)
             newpg = new pg.Client({ port: client.port, host: client.host})
             newpg.cancel query
             log.info "Cancel sent."
