@@ -6,12 +6,12 @@ RELEASE_PATH="release"
 function release {
   echo "release"
   pushd $GPCONFIG_PATH
-  VERSION=`npm version`
+  VERSION=`npm version patch`
   popd
   mkdir -p $RELEASE_PATH
   cp -R $GPCONFIG_PATH $RELEASE_PATH
   mkdir -p $RELEASE_PATH/lib
-  cp /usr/lib64/libzmq.so.3 $RELEASE_PATH/lib 
+  cp /usr/lib64/libzmq.so.3 $RELEASE_PATH/lib
   cp /usr/local/lib/libprotobuf.so.9 $RELEASE_PATH/lib
   tar -czvf gpconfig-$VERSION.tar.gz -C $RELEASE_PATH .
 }
@@ -45,7 +45,7 @@ popd
 
 echo "Building greenplum-config"
 pushd $GPCONFIG_PATH
-[[ $RELEASE == true ]] && clear_greenplum_config 
+[[ $RELEASE == true ]] && clear_greenplum_config
 npm install
 echo "Node connector:"
 ls ../common/node-connector
