@@ -7,6 +7,8 @@ function release {
   echo "release"
   pushd $GPCONFIG_PATH
   VERSION=`npm version patch`
+  git add package.json
+  git commit -m "Increased version number to $VERSION"
   popd
   mkdir -p $RELEASE_PATH
   cp -R $GPCONFIG_PATH $RELEASE_PATH
@@ -14,6 +16,7 @@ function release {
   cp /usr/lib64/libzmq.so.3 $RELEASE_PATH/lib
   cp /usr/local/lib/libprotobuf.so.9 $RELEASE_PATH/lib
   tar -czvf gpconfig-$VERSION.tar.gz -C $RELEASE_PATH .
+  rm -rf $RELEASE_PATH
 }
 
 function clear_connector {
