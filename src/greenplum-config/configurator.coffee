@@ -29,7 +29,9 @@ class PostgresConfigurator
             @_CreateTables
             @_CreateViews
             @_AddTableComments
-            @_AddFieldComments
+            @_AddViewComments
+            @_AddTableFieldComments
+            @_AddViewFieldComments
         ]
 
     connect: (@config_service_url, @appName, @filledConfig) ->
@@ -224,7 +226,6 @@ class PostgresConfigurator
                     "VARCHAR"
 
     _AddTableComments: (callback) =>
-        log.info "config_data", V_(@config_data)
         async.each @config_data.Tables, (table, tables_callback) =>
             if table.Comments?[0]?.Text?
                 comment = table.Comments[0]
@@ -235,6 +236,7 @@ class PostgresConfigurator
             log.debug "table comment added"
             callback(err)
 
+    _AddViewComments: (callback) =>
         async.each @config_data.Tables, (table, tables_callback) =>
             if table.Comments?[0]?.Text?
                 comment = table.Comments[0]
@@ -245,7 +247,7 @@ class PostgresConfigurator
             log.debug "view comment added"
             callback(err)
 
-    _AddFieldComments: (callback) =>
+    _AddTableFieldComments: (callback) =>
         async.each @config_data.Tables, (table, tables_callback) =>
             async.each table.Fields, (field, fields_callback) =>
                 if field.Comments?[0]?.Text?
@@ -259,6 +261,7 @@ class PostgresConfigurator
             log.debug "field comment added"
             callback(err)
 
+    _AddViewFieldComments: (callback) =>
         async.each @config_data.Tables, (table, tables_callback) =>
             async.each table.Fields, (field, fields_callback) =>
                 if field.Comments?[0]?.Text?
@@ -342,13 +345,21 @@ class GreenplumConfigurator extends PostgresConfigurator
             @_CreateTables
             @_CreateViews
             @_AddTableComments
-            @_AddFieldComments
+            @_AddViewComments
+            @_AddTableFieldComments
+            @_AddViewFieldComments
         ]
 
     _AddTableComments: (callback) =>
         super(callback)
 
-    _AddFieldComments: (callback) =>
+    _AddViewComments: (callback) =>
+        super(callback)
+
+    _AddTableFieldComments: (callback) =>
+        super(callback)
+
+    _AddViewFieldComments: (callback) =>
         super(callback)
 
     @getInstance: () =>
