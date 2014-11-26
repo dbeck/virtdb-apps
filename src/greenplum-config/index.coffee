@@ -73,6 +73,18 @@ class GreenplumConfig
                 Scope: 'Preferences'
                 Required: false
                 Default: 3000
+            ,
+                VariableName: 'ErrorTable'
+                Type: 'STRING'
+                Scope: 'Preferences'
+                Required: false
+                Default: 'virtdb_errors'
+            ,
+                VariableName: 'RejectLimit'
+                Type: 'UINT32'
+                Scope: 'Preferences'
+                Required: false
+                Default: 1
             ]
         configToSend = VirtDBConnector.Convert.TemplateToOld configTemplate
         Protocol.SendConfig address, configToSend
