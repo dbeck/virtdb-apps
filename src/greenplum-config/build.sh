@@ -17,6 +17,7 @@ function release {
   cp /usr/local/lib/libprotobuf.so.9 $RELEASE_PATH/lib
   tar -czvf gpconfig-$VERSION.tar.gz -C $RELEASE_PATH .
   rm -rf $RELEASE_PATH
+  echo $VERSION > version
 }
 
 function clear_connector {
