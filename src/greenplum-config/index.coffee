@@ -1,5 +1,5 @@
 CONST = require("./config").Const
-Configurator = require './configurator'
+Configurator = require './postgres-configurator'
 VirtDBConnector = require 'virtdb-connector'
 Protocol = require './protocol'
 log = VirtDBConnector.log
@@ -113,7 +113,10 @@ class GreenplumConfig
 
     _onQuery: (configQuery) =>
         try
-            Configurator.getInstance().queryConfig configQuery, (reply) ->
+            Configurator.getInstance().queryConfig configQuery, (err, reply) ->
+                if err?
+                    log.error "Error happened while querying added tables.", V_(err)
+                    return
                 Protocol.SendConfigQueryReply reply
         catch e
             log.error "Caught exception", V_(e)
