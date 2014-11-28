@@ -1,6 +1,6 @@
 {
   "name": "csv-provider",
-  "version": "0.0.0",
+  "version": "1.5.0",
   "description": "Sample VirtDB data provider written in Coffeescript (handling CSV data)",
   "main": "out/csvDataSource.js",
   "scripts": {

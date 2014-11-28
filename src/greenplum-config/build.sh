@@ -1,7 +1,6 @@
 #!/bin/bash
 GPCONFIG_PATH="src/greenplum-config"
 NODE_CONNECTOR_PATH="src/common/node-connector"
-RELEASE_PATH="release"
 
 function release {
   echo "release"
@@ -10,8 +9,9 @@ function release {
   git add package.json
   git commit -m "Increased version number to $VERSION"
   popd
+  RELEASE_PATH="release/virtdb-dbconfig-$VERSION"
   mkdir -p $RELEASE_PATH
-  cp -R $GPCONFIG_PATH $RELEASE_PATH
+  cp -R $GPCONFIG_PATH/* $RELEASE_PATH
   mkdir -p $RELEASE_PATH/lib
   cp /usr/lib64/libzmq.so.3 $RELEASE_PATH/lib
   cp /usr/local/lib/libprotobuf.so.9 $RELEASE_PATH/lib
