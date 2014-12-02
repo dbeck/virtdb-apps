@@ -12,7 +12,7 @@ namespace
   {
     std::cerr << "Exception: " << exc.what() << "\n"
               << "\n"
-              << "Usage: config-service <Request-Reply-EndPoint> <Pub-Sub-Endpoint>\n"
+              << "Usage: config-service <Request-Reply-EndPoint>\n"
               << "\n"
               << " endpoint examples: \n"
               << "  \"ipc:///tmp/svc_config-endpoint\"\n"
