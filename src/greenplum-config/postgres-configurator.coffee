@@ -40,7 +40,7 @@ class PostgresConfigurator
     @getInstance: () =>
         @instance ?= new PostgresConfigurator()
 
-    _CreateExtension: (callback) =>
+    _CreateExtension: (callback, args) =>
         @pgConnection.Query "SELECT fdwname FROM pg_foreign_data_wrapper", (err, results) =>
             if err then return callback(err, results)
             if results.rows?
@@ -52,14 +52,14 @@ class PostgresConfigurator
                 if err then return callback(err, results)
                 @pgConnection.Query "ALTER FOREIGN DATA WRAPPER virtdb_fdw OPTIONS ( url '#{@config_service_url}')", callback
 
-    _CreateServer: (args, callback) =>
+    _CreateServer: (callback, args) =>
         config_data = args[0]
         @pgConnection.Query "CREATE SERVER \"#{config_data.Name}_srv\"
                  FOREIGN DATA WRAPPER virtdb_fdw
         ", (err, results) =>
             callback()
 
-    _DropTables: (args, callback) =>
+    _DropTables: (callback, args) =>
         config_data = args[0]
         async.each config_data.Tables, (table, tables_callback) =>
             @pgConnection.Query "DROP FOREIGN TABLE IF EXISTS #{@_FullTableName(config_data.Name, table)} CASCADE", tables_callback
@@ -67,7 +67,7 @@ class PostgresConfigurator
             log.debug "", config_data.Tables.length, "tables dropped", V_(err)
             callback()
 
-    _CreateTables: (args, callback) =>
+    _CreateTables: (callback, args) =>
         config_data = args[0]
         async.each config_data.Tables, (table, tables_callback) =>
             if not table.Fields? or table.Fields.length is 0
@@ -91,7 +91,7 @@ class PostgresConfigurator
             log.debug "", config_data.Tables.length, "tables created"
             callback(err)
 
-    _CreateViews: (args, callback) =>
+    _CreateViews: (callback, args) =>
         config_data = args[0]
         async.each config_data.Tables, (table, tables_callback) =>
             log.info "Creating views: ", V_(table)
@@ -100,7 +100,7 @@ class PostgresConfigurator
             log.debug "", config_data.Tables.length, "views created"
             callback(err)
 
-    _CreateSchema: (args, callback) =>
+    _CreateSchema: (callback, args) =>
         config_data = args[0]
         log.info "In create schema", V_(config_data)
         async.each config_data.Tables, (table, tables_callback) =>
@@ -159,7 +159,7 @@ class PostgresConfigurator
                 else
                     "VARCHAR"
 
-    _AddTableComments: (args, callback) =>
+    _AddTableComments: (callback, args) =>
         config_data = args[0]
         async.each config_data.Tables, (table, tables_callback) =>
             if table.Comments?[0]?.Text?
@@ -171,7 +171,7 @@ class PostgresConfigurator
             log.debug "table comment added"
             callback(err)
 
-    _AddViewComments: (args, callback) =>
+    _AddViewComments: (callback, args) =>
         config_data = args[0]
         async.each config_data.Tables, (table, tables_callback) =>
             if table.Comments?[0]?.Text?
@@ -183,7 +183,7 @@ class PostgresConfigurator
             log.debug "view comment added"
             callback(err)
 
-    _AddTableFieldComments: (args, callback) =>
+    _AddTableFieldComments: (callback, args) =>
         config_data = args[0]
         async.each config_data.Tables, (table, tables_callback) =>
             async.each table.Fields, (field, fields_callback) =>
@@ -198,7 +198,7 @@ class PostgresConfigurator
             log.debug "field comment added"
             callback(err)
 
-    _AddViewFieldComments: (args, callback) =>
+    _AddViewFieldComments: (callback, args) =>
         config_data = args[0]
         async.each config_data.Tables, (table, tables_callback) =>
             async.each table.Fields, (field, fields_callback) =>
@@ -213,7 +213,7 @@ class PostgresConfigurator
             log.debug "view field comment added"
             callback(err)
 
-    _GetExternalTables: (args, callback) =>
+    _GetExternalTables: (callback, args) =>
         query = args[0]
         q_get_external_tables = "
             SELECT

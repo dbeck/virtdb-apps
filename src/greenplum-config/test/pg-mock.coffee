@@ -12,7 +12,7 @@ class PGMock
             callback(new Error("Can't connect."), null, () ->)
             return
         if (connectionString == @goodString)
-            callback(null, null, () ->)
+            callback(null, this, () ->)
             return
         return
 
@@ -21,7 +21,7 @@ class PGMock
 
     cancel: (queryString) =>
 
-    Query: (queryString, callback) =>
+    query: (queryString, callback) =>
         if (queryString == @badString)
             callback(new Error("Query failed."))
             return

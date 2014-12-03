@@ -11,7 +11,7 @@ class PGConfigTestMock extends PGMock
         @queryCallCount = 0
         callback(null, null, () ->)
 
-    Query: (queryString, callback) =>
+    query: (queryString, callback) =>
         if queryString == @badString
             callback(new Error("Query failed."))
             return
@@ -25,11 +25,9 @@ class PGConfigTestMock extends PGMock
                 })
             return
         if queryString.indexOf("test2_srv") > 0
-            # console.log "query called test2", queryString
             @queryCallCount += 1
             callback()
             return
-        # console.log "query called", queryString
         @queryCallCount += 1
         callback(null, [])
 

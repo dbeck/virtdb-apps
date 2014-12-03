@@ -12,6 +12,8 @@ class PostgresConnection
     # pg.query queryString, callback(err, result)
     pg: null
 
+    postgres: null
+
     # The worker queue. We store tasks in this queue and perform them one at a time
     # this is needed as otherwise our queries would interfere with each other in the DB engine
     queue: []
@@ -42,19 +44,10 @@ class PostgresConnection
             log.info "#of commands to be completed: ", V_(commands.length)
             err = null
             results = []
-            for command in commands
-                on_results = (theErr, theResults) ->
-                    err = theErr
-                    results = results.concat(theResults)
-                if args? and args.length > 0
-                    command args, on_results
-                else
-                    command on_results
-                if err
-                    log.error "Error happened in perform", V_(err)
-                    break
-            done(err)
-            perform_done(err, results)
+            async.series commands, (err, results) ->
+                done(err)
+                perform_done(err, results)
+            , args
 
     Query: (queryString, callback, ignoreError = false, client = @pg) =>
         log.info "query", V_(queryString)
@@ -67,7 +60,7 @@ class PostgresConnection
             log.info "Cancel sent."
             callback(new Error("Query timed out"))
         , @queryTimeout
-        client.Query queryString, (err, result) =>
+        client.query queryString, (err, result) =>
             if not timedOut
                 clearTimeout timeout
                 if ignoreError
