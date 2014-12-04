@@ -60,7 +60,7 @@ class PostgresConnection
             log.info "Cancel sent."
             callback(new Error("Query timed out"))
         , @queryTimeout
-        client.query queryString, (err, result) =>
+        @postgres.query queryString, (err, result) =>
             if not timedOut
                 clearTimeout timeout
                 if ignoreError

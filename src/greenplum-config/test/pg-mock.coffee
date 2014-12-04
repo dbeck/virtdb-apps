@@ -9,7 +9,7 @@ class PGMock
 
     connect: (connectionString, callback) =>
         if (connectionString == @badString)
-            callback(new Error("Can't connect."), null, () ->)
+            callback(new Error("Can't connect."), this, () ->)
             return
         if (connectionString == @goodString)
             callback(null, this, () ->)

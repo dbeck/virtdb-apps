@@ -9,7 +9,7 @@ class PGConfigTestMock extends PGMock
     @queryCallCount: 0
     connect: (connectionString, callback) =>
         @queryCallCount = 0
-        callback(null, null, () ->)
+        callback(null, this, () ->)
 
     query: (queryString, callback) =>
         if queryString == @badString
