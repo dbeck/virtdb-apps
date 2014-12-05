@@ -129,7 +129,7 @@ class Config
             @getConfigurator().queryConfig configQuery, (err, reply) ->
                 if err?
                     log.error "Error happened while querying added tables.", V_(err)
-                    return
+                    reply = {}
                 Protocol.SendConfigQueryReply reply
         catch e
             log.error "Caught exception", V_(e)
