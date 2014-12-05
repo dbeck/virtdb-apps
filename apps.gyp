@@ -53,16 +53,24 @@
         },
       },],
       ['OS=="linux"', {
-        'cflags': [ '<!@(pkg-config --cflags protobuf libzmq) -g3' ],
+        'cflags': [ '<!@(pkg-config --cflags protobuf libzmq)' ],
         'variables': {
-          'proto_libdir' : '<!(pkg-config --libs-only-L protobuf)',
-          'zmq_libdir' :   '<!(pkg-config --libs-only-L libzmq)',
+          'proto_libdir' :      '<!(pkg-config --libs-only-L protobuf)',
+          'zmq_libdir' :        '<!(pkg-config --libs-only-L libzmq)',
+          'sodium_libdir':      '<!(./filedir_1.sh "libsodium.[ads]*" $HOME/libsodium-install)',
+          'sodium_lib':         '<!(./if_exists.sh <(sodium_libdir) "-lsodium")',
         },
         'link_settings': {
-          'ldflags': ['-Wl,--no-as-needed -g3',],
+          'ldflags':   [
+                         '<!(./libdir_1.sh "libprotobuf.[ads]*" $HOME/protobuf-install)',
+                         '<!(./libdir_1.sh "libzmq.[ads]*" $HOME/libzmq-install)',
+                         '<!(./libdir_1.sh "libsodium.[ads]*" $HOME/libsodium-install)',
+                         '-Wl,--no-as-needed',
+                       ],
           'libraries': [ 
                          '<!@(pkg-config --libs-only-L --libs-only-l protobuf libzmq)',
-                         '<!@(./genrpath.sh "<(proto_libdir)" "<(zmq_libdir)" )',
+                         '<!@(./genrpath.sh "<(proto_libdir)" "<(zmq_libdir)") ',
+                         '<(sodium_lib) ',
                        ],
         },
       },],
