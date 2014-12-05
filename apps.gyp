@@ -58,7 +58,7 @@
           'proto_libdir' :      '<!(pkg-config --libs-only-L protobuf)',
           'zmq_libdir' :        '<!(pkg-config --libs-only-L libzmq)',
           'sodium_libdir':      '<!(./filedir_1.sh "libsodium.[ads]*" $HOME/libsodium-install)',
-          'sodium_lib':         '<!(./if_exists.sh <(sodium_libdir) "-lsodium")',
+          'sodium_lib':         '<!(./if_exists.sh <(sodium_libdir) "-lsodium" -L/none)',
         },
         'link_settings': {
           'ldflags':   [

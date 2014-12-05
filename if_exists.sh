@@ -2,6 +2,7 @@
 
 LHS=$1
 IFEXISTS=$2
+IFNOT=$3
 
 if [ "X$IFEXISTS" = "X" ]
 then
@@ -13,7 +14,7 @@ if [ -e $LHS ]
 then
   echo $IFEXISTS
 else
-  echo 
+  echo $IFNOT
 fi
 
 exit 0
