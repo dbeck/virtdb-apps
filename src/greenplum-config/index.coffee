@@ -23,11 +23,15 @@ class GreenplumConfig
         configToSend = VirtDBConnector.Convert.TemplateToOld empty
         Protocol.SendConfig address, configToSend, (reply) =>
             if not reply.ConfigData? or reply.ConfigData.length == 0
-                @sendConfigTemplate address
+                reply = @_getConfigTemplate()
             else
+                for config in reply.ConfigData
+                    if config.Key is ''
+                        config.Children = @_getConfigTemplate().ConfigData[0].Children
+            Protocol.SendConfig address, reply, (reply) =>
                 @connect reply
 
-    sendConfigTemplate: (address) =>
+    _getConfigTemplate: () =>
         configTemplate =
             AppName: @name
             Config: [
@@ -93,8 +97,7 @@ class GreenplumConfig
                 Required: false
                 Default: 1
             ]
-        configToSend = VirtDBConnector.Convert.TemplateToOld configTemplate
-        Protocol.SendConfig address, configToSend
+        VirtDBConnector.Convert.TemplateToOld configTemplate
 
     connect: (config) =>
         try
