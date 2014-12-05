@@ -1,5 +1,6 @@
 CONST = require("./config").Const
-Configurator = require './configurator'
+PostgresConfigurator = require './postgres-configurator'
+GreenplumConfigurator = require './greenplum-configurator'
 VirtDBConnector = require 'virtdb-connector'
 Protocol = require './protocol'
 log = VirtDBConnector.log
@@ -7,8 +8,8 @@ V_ = log.Variable
 util = require 'util'
 argv = require('minimist')(process.argv.slice(2))
 
-class GreenplumConfig
-    @empty: null
+class Config
+    @config: null
 
     constructor: (@name, @svcConfigAddress) ->
         VirtDBConnector.onAddress 'CONFIG', 'REQ_REP', @sendEmptyConfigTemplate
@@ -16,20 +17,30 @@ class GreenplumConfig
         VirtDBConnector.connect(@name, @svcConfigAddress)
 
     sendEmptyConfigTemplate: (name, address) =>
-        @empty =
+        empty =
             AppName: @name
         console.log "Got address for CONFIG REQ_REP", name, address
-        configToSend = VirtDBConnector.Convert.TemplateToOld @empty
+        configToSend = VirtDBConnector.Convert.TemplateToOld empty
         Protocol.SendConfig address, configToSend, (reply) =>
             if not reply.ConfigData? or reply.ConfigData.length == 0
-                @sendConfigTemplate address
+                reply = @_getConfigTemplate()
             else
+                for config in reply.ConfigData
+                    if config.Key is ''
+                        config.Children = @_getConfigTemplate().ConfigData[0].Children
+            Protocol.SendConfig address, reply, (reply) =>
                 @connect reply
 
-    sendConfigTemplate: (address) =>
+    _getConfigTemplate: () =>
         configTemplate =
             AppName: @name
             Config: [
+                VariableName: 'Engine'
+                Type: 'STRING'
+                Scope: 'Postgres'
+                Required: true
+                Default: 'Postgres'
+            ,
                 VariableName: 'Host'
                 Type: 'STRING'
                 Scope: 'Postgres'
@@ -73,16 +84,30 @@ class GreenplumConfig
                 Scope: 'Preferences'
                 Required: false
                 Default: 3000
+            ,
+                VariableName: 'ErrorTable'
+                Type: 'STRING'
+                Scope: 'Preferences'
+                Required: false
+                Default: 'virtdb_errors'
+            ,
+                VariableName: 'RejectLimit'
+                Type: 'UINT32'
+                Scope: 'Preferences'
+                Required: false
+                Default: 1
             ]
-        configToSend = VirtDBConnector.Convert.TemplateToOld configTemplate
-        Protocol.SendConfig address, configToSend
+        VirtDBConnector.Convert.TemplateToOld configTemplate
 
     connect: (config) =>
-        if config?
-            newConfig = VirtDBConnector.Convert.ToNew config
-            configObject = VirtDBConnector.Convert.ToObject newConfig
-            if configObject?.Postgres?
-                Configurator.getInstance().connect @svcConfigAddress, @name, configObject
+        try
+            if config?
+                newConfig = VirtDBConnector.Convert.ToNew config
+                @config = VirtDBConnector.Convert.ToObject newConfig
+                if @config?.Postgres?
+                    @getConfigurator().connect @svcConfigAddress, @name, @config
+        catch e
+            log.error "Caught exception", V_(e)
 
 
     onConfig: (config...) =>
@@ -95,20 +120,31 @@ class GreenplumConfig
 
     _onMessage: (serverConfig) =>
         try
-            new Configurator.getInstance().add serverConfig
+            @getConfigurator().add serverConfig
         catch e
             log.error "Caught exception", V_(e)
 
     _onQuery: (configQuery) =>
         try
-            Configurator.getInstance().queryConfig configQuery, (reply) ->
+            @getConfigurator().queryConfig configQuery, (err, reply) ->
+                if err?
+                    log.error "Error happened while querying added tables.", V_(err)
+                    reply = {}
                 Protocol.SendConfigQueryReply reply
         catch e
             log.error "Caught exception", V_(e)
 
+    getConfigurator: () =>
+        if @config?.Postgres?.Engine?.toLowerCase() is "postgres"
+            return PostgresConfigurator.getInstance()
+        if @config?.Postgres?.Engine?.toLowerCase() is "greenplum"
+            return GreenplumConfigurator.getInstance()
+        return null
+
+
 console.log "Arguments got:", argv
-greenplumConfig = new GreenplumConfig argv['name'], argv['url']
-greenplumConfig.listen()
+config = new Config argv['name'], argv['url']
+config.listen()
 
 #
 # On exit close the sockets
