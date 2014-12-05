@@ -1,5 +1,6 @@
 CONST = require("./config").Const
-Configurator = require './postgres-configurator'
+PostgresConfigurator = require './postgres-configurator'
+GreenplumConfigurator = require './greenplum-configurator'
 VirtDBConnector = require 'virtdb-connector'
 Protocol = require './protocol'
 log = VirtDBConnector.log
@@ -8,7 +9,7 @@ util = require 'util'
 argv = require('minimist')(process.argv.slice(2))
 
 class GreenplumConfig
-    @empty: null
+    @config: null
 
     constructor: (@name, @svcConfigAddress) ->
         VirtDBConnector.onAddress 'CONFIG', 'REQ_REP', @sendEmptyConfigTemplate
@@ -16,10 +17,10 @@ class GreenplumConfig
         VirtDBConnector.connect(@name, @svcConfigAddress)
 
     sendEmptyConfigTemplate: (name, address) =>
-        @empty =
+        empty =
             AppName: @name
         console.log "Got address for CONFIG REQ_REP", name, address
-        configToSend = VirtDBConnector.Convert.TemplateToOld @empty
+        configToSend = VirtDBConnector.Convert.TemplateToOld empty
         Protocol.SendConfig address, configToSend, (reply) =>
             if not reply.ConfigData? or reply.ConfigData.length == 0
                 @sendConfigTemplate address
@@ -30,6 +31,12 @@ class GreenplumConfig
         configTemplate =
             AppName: @name
             Config: [
+                VariableName: 'Engine'
+                Type: 'STRING'
+                Scope: 'Postgres'
+                Required: true
+                Default: 'Postgres'
+            ,
                 VariableName: 'Host'
                 Type: 'STRING'
                 Scope: 'Postgres'
@@ -90,11 +97,14 @@ class GreenplumConfig
         Protocol.SendConfig address, configToSend
 
     connect: (config) =>
-        if config?
-            newConfig = VirtDBConnector.Convert.ToNew config
-            configObject = VirtDBConnector.Convert.ToObject newConfig
-            if configObject?.Postgres?
-                Configurator.getInstance().connect @svcConfigAddress, @name, configObject
+        try
+            if config?
+                newConfig = VirtDBConnector.Convert.ToNew config
+                @config = VirtDBConnector.Convert.ToObject newConfig
+                if @config?.Postgres?
+                    @getConfigurator().connect @svcConfigAddress, @name, configObject
+        catch e
+            log.error "Caught exception", V_(e)
 
 
     onConfig: (config...) =>
@@ -107,19 +117,27 @@ class GreenplumConfig
 
     _onMessage: (serverConfig) =>
         try
-            new Configurator.getInstance().add serverConfig
+            @getConfigurator().add serverConfig
         catch e
             log.error "Caught exception", V_(e)
 
     _onQuery: (configQuery) =>
         try
-            Configurator.getInstance().queryConfig configQuery, (err, reply) ->
+            @getConfigurator().queryConfig configQuery, (err, reply) ->
                 if err?
                     log.error "Error happened while querying added tables.", V_(err)
                     return
                 Protocol.SendConfigQueryReply reply
         catch e
             log.error "Caught exception", V_(e)
+
+    getConfigurator: () =>
+        if @config?.Postgres?.Engine?.toLowerCase() is "postgres"
+            return PostgresConfigurator.getInstance()
+        if @config?.Postgres?.Engine?.toLowerCase() is "greenplum"
+            return PostgresConfigurator.getInstance()
+        return null
+
 
 console.log "Arguments got:", argv
 greenplumConfig = new GreenplumConfig argv['name'], argv['url']

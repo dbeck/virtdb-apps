@@ -19,7 +19,7 @@ class PostgresConfigurator
         return
 
     add: (server_config, callback) =>
-        if not server_config.Tables? or server_config.Tables.length is 0
+        if not server_config.Tables? or server_config.Tables.length is 0 or not server_config.Name?
             callback new Error("Invalid config object (it does not contain any tables): #{server_config}")
             return
         log.info "Connecting to Postgres."
@@ -40,7 +40,7 @@ class PostgresConfigurator
     @getInstance: () =>
         @instance ?= new PostgresConfigurator()
 
-    _CreateExtension: (callback, args) =>
+    _CreateExtension: (config_data, callback) =>
         @pgConnection.Query "SELECT fdwname FROM pg_foreign_data_wrapper", (err, results) =>
             if err then return callback(err, results)
             if results.rows?
@@ -52,23 +52,20 @@ class PostgresConfigurator
                 if err then return callback(err, results)
                 @pgConnection.Query "ALTER FOREIGN DATA WRAPPER virtdb_fdw OPTIONS ( url '#{@config_service_url}')", callback
 
-    _CreateServer: (callback, args) =>
-        config_data = args[0]
+    _CreateServer: (config_data, callback) =>
         @pgConnection.Query "CREATE SERVER \"#{config_data.Name}_srv\"
                  FOREIGN DATA WRAPPER virtdb_fdw
         ", (err, results) =>
             callback()
 
-    _DropTables: (callback, args) =>
-        config_data = args[0]
+    _DropTables: (config_data, callback) =>
         async.each config_data.Tables, (table, tables_callback) =>
             @pgConnection.Query "DROP FOREIGN TABLE IF EXISTS #{@_FullTableName(config_data.Name, table)} CASCADE", tables_callback
         , (err) =>
             log.debug "", config_data.Tables.length, "tables dropped", V_(err)
             callback()
 
-    _CreateTables: (callback, args) =>
-        config_data = args[0]
+    _CreateTables: (config_data, callback) =>
         async.each config_data.Tables, (table, tables_callback) =>
             if not table.Fields? or table.Fields.length is 0
                 tables_callback(new Error("Invalid table data, no fields"))
@@ -91,8 +88,7 @@ class PostgresConfigurator
             log.debug "", config_data.Tables.length, "tables created"
             callback(err)
 
-    _CreateViews: (callback, args) =>
-        config_data = args[0]
+    _CreateViews: (config_data, callback) =>
         async.each config_data.Tables, (table, tables_callback) =>
             log.info "Creating views: ", V_(table)
             @pgConnection.Query "CREATE VIEW #{@_FullViewName(config_data.Name, table)} AS SELECT * FROM #{@_FullTableName(config_data.Name, table)}", tables_callback
@@ -100,8 +96,7 @@ class PostgresConfigurator
             log.debug "", config_data.Tables.length, "views created"
             callback(err)
 
-    _CreateSchema: (callback, args) =>
-        config_data = args[0]
+    _CreateSchema: (config_data, callback) =>
         log.info "In create schema", V_(config_data)
         async.each config_data.Tables, (table, tables_callback) =>
             q_create_schema = "CREATE SCHEMA #{@_SchemaName(config_data.Name, table)}"
@@ -159,8 +154,7 @@ class PostgresConfigurator
                 else
                     "VARCHAR"
 
-    _AddTableComments: (callback, args) =>
-        config_data = args[0]
+    _AddTableComments: (config_data, callback) =>
         async.each config_data.Tables, (table, tables_callback) =>
             if table.Comments?[0]?.Text?
                 comment = table.Comments[0]
@@ -171,8 +165,7 @@ class PostgresConfigurator
             log.debug "table comment added"
             callback(err)
 
-    _AddViewComments: (callback, args) =>
-        config_data = args[0]
+    _AddViewComments: (config_data, callback) =>
         async.each config_data.Tables, (table, tables_callback) =>
             if table.Comments?[0]?.Text?
                 comment = table.Comments[0]
@@ -183,8 +176,7 @@ class PostgresConfigurator
             log.debug "view comment added"
             callback(err)
 
-    _AddTableFieldComments: (callback, args) =>
-        config_data = args[0]
+    _AddTableFieldComments: (config_data, callback) =>
         async.each config_data.Tables, (table, tables_callback) =>
             async.each table.Fields, (field, fields_callback) =>
                 if field.Comments?[0]?.Text?
@@ -198,8 +190,7 @@ class PostgresConfigurator
             log.debug "field comment added"
             callback(err)
 
-    _AddViewFieldComments: (callback, args) =>
-        config_data = args[0]
+    _AddViewFieldComments: (config_data, callback) =>
         async.each config_data.Tables, (table, tables_callback) =>
             async.each table.Fields, (field, fields_callback) =>
                 if field.Comments?[0]?.Text?
@@ -213,8 +204,7 @@ class PostgresConfigurator
             log.debug "view field comment added"
             callback(err)
 
-    _GetExternalTables: (callback, args) =>
-        query = args[0]
+    _GetExternalTables: (query, callback) =>
         q_get_external_tables = "
             SELECT
                 opt.option_name,

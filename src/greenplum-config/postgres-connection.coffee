@@ -33,6 +33,12 @@ class PostgresConnection
                 current.callback?(err, results)
         @working = false
 
+    applyEachArgs = (commands, args) ->
+        ret = []
+        for command in commands
+            ret.push async.apply.apply null, [command].concat(args)
+        ret
+
     _DoPerform: (commands, args, perform_done) =>
         @pg.connect @connectionString, (err, client, done) =>
             if err
@@ -44,10 +50,10 @@ class PostgresConnection
             log.info "#of commands to be completed: ", V_(commands.length)
             err = null
             results = []
-            async.series commands, (err, results) ->
+            commands = applyEachArgs commands, args
+            async.series commands, (err, results) =>
                 done(err)
                 perform_done(err, results)
-            , args
 
     Query: (queryString, callback, ignoreError = false, client = @pg) =>
         log.info "query", V_(queryString)
