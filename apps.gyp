@@ -70,7 +70,7 @@
           'libraries': [ 
                          '<!@(pkg-config --libs-only-L --libs-only-l protobuf libzmq)',
                          '<!@(./genrpath.sh "<(proto_libdir)" "<(zmq_libdir)") ',
-                         '<(sodium_lib) ',
+                         '<(sodium_lib)',
                        ],
         },
       },],
