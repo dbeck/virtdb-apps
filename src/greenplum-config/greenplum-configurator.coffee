@@ -58,6 +58,8 @@ class GreenplumConfigurator extends PostgresConfigurator
         @pgConnection.Perform [@_QueryExternalTables], query, (err, results) =>
             if err
                 log.error "Error happened in perform", V_(err)
+                callback(err, results)
+                return
             reply =
                 Servers: []
             orderedResults = {}
@@ -144,7 +146,10 @@ class GreenplumConfigurator extends PostgresConfigurator
                 "
             @pgConnection.Query q_create_table, tables_callback
         , (err) =>
-            log.debug "", config_data.Tables.length, "tables created"
+            if (err)
+                log.error "Error happened while creating tables", V_(err)
+            else
+                log.debug "", config_data.Tables.length, "tables created"
             callback(err)
 
 module.exports = GreenplumConfigurator

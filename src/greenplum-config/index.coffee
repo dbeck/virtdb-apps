@@ -8,7 +8,7 @@ V_ = log.Variable
 util = require 'util'
 argv = require('minimist')(process.argv.slice(2))
 
-class GreenplumConfig
+class Config
     @config: null
 
     constructor: (@name, @svcConfigAddress) ->
@@ -105,7 +105,7 @@ class GreenplumConfig
                 newConfig = VirtDBConnector.Convert.ToNew config
                 @config = VirtDBConnector.Convert.ToObject newConfig
                 if @config?.Postgres?
-                    @getConfigurator().connect @svcConfigAddress, @name, configObject
+                    @getConfigurator().connect @svcConfigAddress, @name, @config
         catch e
             log.error "Caught exception", V_(e)
 
@@ -138,13 +138,13 @@ class GreenplumConfig
         if @config?.Postgres?.Engine?.toLowerCase() is "postgres"
             return PostgresConfigurator.getInstance()
         if @config?.Postgres?.Engine?.toLowerCase() is "greenplum"
-            return PostgresConfigurator.getInstance()
+            return GreenplumConfigurator.getInstance()
         return null
 
 
 console.log "Arguments got:", argv
-greenplumConfig = new GreenplumConfig argv['name'], argv['url']
-greenplumConfig.listen()
+config = new Config argv['name'], argv['url']
+config.listen()
 
 #
 # On exit close the sockets
