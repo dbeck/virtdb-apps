@@ -1,4 +1,20 @@
 {
+  'variables': {
+    'proto_libdir' :      '<!(pkg-config --libs-only-L protobuf)',
+    'zmq_libdir' :        '<!(pkg-config --libs-only-L libzmq)',
+    'sodium_libdir':      '<!(./filedir_1.sh "libsodium.[ads]*" $HOME/libsodium-install)',
+    'sodium_lib':         '<!(./if_exists.sh <(sodium_libdir) "-lsodium" -L/none)',
+    'app_ldflagsx':    [
+                          '<!(./libdir_1.sh "libprotobuf.[ads]*" $HOME/protobuf-install)',
+                          '<!(./libdir_1.sh "libzmq.[ads]*" $HOME/libzmq-install)',
+                          '<!(./libdir_1.sh "libsodium.[ads]*" $HOME/libsodium-install)',
+                          '<!@(./genrpath.sh "<(proto_libdir)" "<(zmq_libdir)") ',
+                       ],
+    'app_libsx':       [ 
+                         '<!@(pkg-config --libs-only-L --libs-only-l protobuf libzmq)',
+                         '<(sodium_lib)',
+                       ],
+  },
   'target_defaults': {
     'default_configuration': 'Debug',
     'configurations': {
@@ -43,6 +59,10 @@
       ['_type=="static_library"', {'cflags': ['-fPIC']}],
       ['_type=="executable"',     {'cflags': ['-fPIC']}],
     ],
+    'link_settings': {
+      'ldflags':    [ '<@(app_ldflagsx)', ],
+      'libraries':  [ '<@(app_libsx)', ],
+    },
     'conditions': [
       ['OS=="mac"', {
         'cflags': [ '<!@(pkg-config --cflags protobuf libzmq)', '-std=c++11', ],
@@ -53,17 +73,10 @@
         },
       },],
       ['OS=="linux"', {
-        'cflags': [ '<!@(pkg-config --cflags protobuf libzmq) -g3' ],
-        'variables': {
-          'proto_libdir' : '<!(pkg-config --libs-only-L protobuf)',
-          'zmq_libdir' :   '<!(pkg-config --libs-only-L libzmq)',
-        },
+        'cflags': [ '<!@(pkg-config --cflags protobuf libzmq)' ],
         'link_settings': {
-          'ldflags': ['-Wl,--no-as-needed -g3',],
-          'libraries': [ 
-                         '<!@(pkg-config --libs-only-L --libs-only-l protobuf libzmq)',
-                         '<!@(./genrpath.sh "<(proto_libdir)" "<(zmq_libdir)" )',
-                       ],
+          'ldflags':    [ '-Wl,--no-as-needed', ],
+          'libraries':  [ '-lrt', ],
         },
       },],
     ],
