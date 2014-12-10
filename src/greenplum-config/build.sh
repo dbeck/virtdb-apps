@@ -6,6 +6,8 @@ function release {
   echo "release"
   pushd $GPCONFIG_PATH
   VERSION=`npm version patch`
+  # git config --global user.name "Your Name"
+  # git config --global user.email you@example.com
   git add package.json
   git commit -m "Increased version number to $VERSION"
   popd
