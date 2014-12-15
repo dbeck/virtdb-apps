@@ -6,8 +6,8 @@ echo Creating build $BUILDNO
 
 echo >>$HOME/.netrc
 echo machine github.com >>$HOME/.netrc
-echo login jenkins-starschema >>$HOME/.netrc
-echo password Manager1 >>$HOME/.netrc
+echo login $GITHUB_USER >>$HOME/.netrc
+echo password $GITHUB_PASSWORD >>$HOME/.netrc
 echo >>$HOME/.netrc
 
 cd $HOME/virtdb-apps
