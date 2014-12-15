@@ -1,47 +1,53 @@
 #!/bin/bash
+
+cd $HOME
+git clone --recursive https://jenkins-starschema:Manager1@github.com/starschema/virtdb-apps.git virtdb-apps
+echo Creating build $BUILDNO
+
+echo >>$HOME/.netrc
+echo machine github.com >>$HOME/.netrc
+echo login $GITHUB_USER >>$HOME/.netrc
+echo password $GITHUB_PASSWORD >>$HOME/.netrc
+echo >>$HOME/.netrc
+
+cd $HOME/virtdb-apps
+
+git config --global user.name "jenkins-starschema"
+git config --global user.email jenkins@starschema.net
+
 GPCONFIG_PATH="src/greenplum-config"
 NODE_CONNECTOR_PATH="src/common/node-connector"
 
+# -- make sure we have proto module built for us --
+pushd src/common/proto
+gyp --depth=. proto.gyp
+make
+popd
+
+# -- figure out the next release number --
 function release {
   echo "release"
   pushd $GPCONFIG_PATH
   VERSION=`npm version patch`
   git add package.json
   git commit -m "Increased version number to $VERSION"
+  git tag $VERSION
   popd
-  RELEASE_PATH="release/virtdb-dbconfig-$VERSION"
+  RELEASE_PATH="$HOME/build-result/virtdb-dbconfig-$VERSION"
   mkdir -p $RELEASE_PATH
   cp -R $GPCONFIG_PATH/* $RELEASE_PATH
   mkdir -p $RELEASE_PATH/lib
-  cp /usr/lib64/libzmq.so.3 $RELEASE_PATH/lib
-  cp /usr/local/lib/libprotobuf.so.9 $RELEASE_PATH/lib
-  tar -czvf gpconfig-$VERSION.tar.gz -C $RELEASE_PATH .
-  rm -rf $RELEASE_PATH
+  pushd $RELEASE_PATH/..
+  tar cvfj gpconfig-${VERSION}.tbz virtdb-dbconfig-$VERSION 
+  rm -Rf virtdb-dbconfig-$VERSION
+  popd
   echo $VERSION > version
-}
-
-function clear_connector {
-  echo "clearining node connector"
-  rm -rf $NODE_CONNECTOR_PATH/node_modules
-  rm -rf $NODE_CONNECTOR_PATH/lib
-}
-
-function clear_greenplum_config {
-  echo "Clearing greenplum config"
-  rm -rf $GPCONFIG_PATH/node_modules
-  rm -rf $GPCONFIG_PATH/out
+  git push origin $VERSION
 }
 
 [[ ${1,,} == "release" ]] && RELEASE=true || RELEASE=false
 
-git submodule update --init --recursive
-pushd src/common/proto
-gyp --depth=. proto.gyp
-make
-popd
-
 echo "Building node-connector"
-[[ $RELEASE == true ]] && clear_connector
 pushd $NODE_CONNECTOR_PATH
 npm install
 node_modules/gulp/bin/gulp.js build
@@ -49,7 +55,6 @@ popd
 
 echo "Building greenplum-config"
 pushd $GPCONFIG_PATH
-[[ $RELEASE == true ]] && clear_greenplum_config
 npm install
 echo "Node connector:"
 ls ../common/node-connector
@@ -60,3 +65,4 @@ node_modules/gulp/bin/gulp.js build
 popd
 
 [[ $RELEASE == true ]] && release || echo "non-release"
+
