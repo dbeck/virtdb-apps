@@ -1,0 +1,19 @@
+#!/bin/sh
+
+IMAGE_NAME="virtdb-build:centos6-pgconfig-builder"
+# docker rmi $IMAGE_NAME
+docker build --force-rm=true -t "$IMAGE_NAME" .
+
+if [ $? -ne 0 ]
+then
+  echo "ERROR during docker build " $IMAGE_NAME 
+  exit 101
+fi
+
+echo "successfully built $IMAGE_NAME"
+
+mkdir -p build-result
+chmod a+rwxt build-result
+docker run --rm=true -v $PWD/build-result:/home/virtdb-demo/build-result -t $IMAGE_NAME ./build-pgconfig.sh $*
+ls -ltr $PWD/build-result
+
