@@ -39,6 +39,7 @@ function release {
   mkdir -p $RELEASE_PATH/lib
   pushd $RELEASE_PATH/..
   tar cvfj gpconfig-${VERSION}.tbz virtdb-dbconfig-$VERSION 
+  rm -Rf virtdb-dbconfig-$VERSION
   popd
   echo $VERSION > version
   git push origin $VERSION
