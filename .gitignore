@@ -83,3 +83,6 @@ config.status
 *.Makefile
 out/
 gyp-mac-tool
+
+# buid generated
+src/greenplum-config/build-result
