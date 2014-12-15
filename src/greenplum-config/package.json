@@ -33,6 +33,6 @@
     "node-protobuf": "1.2.0",
     "pg": "3.4.1",
     "source-map-support": "0.2.7",
-    "zmq": "2.7.0"
+    "zmq": "2.8.0"
   }
 }
