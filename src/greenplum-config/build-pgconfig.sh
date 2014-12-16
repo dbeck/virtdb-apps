@@ -38,8 +38,11 @@ function release {
   pushd $GPCONFIG_PATH
   VERSION=`npm version patch`
   git add package.json
+  if [ $? -ne 0 ]; then echo "failed to add package.json to patch"; exit 10; fi
   git commit -m "Increased version number to $VERSION"
-  git tag $VERSION
+  if [ $? -ne 0 ]; then echo "failed to commit patch"; exit 10; fi
+  git tag -f $VERSION
+  if [ $? -ne 0 ]; then echo "failed to tag repo"; exit 10; fi
   popd
   RELEASE_PATH="$HOME/build-result/virtdb-dbconfig-$VERSION"
   mkdir -p $RELEASE_PATH
@@ -67,7 +70,7 @@ pushd $GPCONFIG_PATH
 npm install
 if [ $? -ne 0 ]; then echo "npm install"; exit 10; fi
 echo "Node connector:"
-if [ !-e ../common/node-connector ] ; then echo "../common/node-connector doesn't exist"; exit 10; fi
+if [ ! -e ../common/node-connector ] ; then echo "../common/node-connector doesn't exist"; exit 10; fi
 ls ../common/node-connector
 npm install ../common/node-connector
 if [ $? -ne 0 ]; then echo "npm install ../common/node-connector failed"; exit 10; fi
