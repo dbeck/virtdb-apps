@@ -1,7 +1,14 @@
 #!/bin/bash
 
+if [ "X" == "X$GITHUB_USER" ]; then echo "Need GITHUB_USER environment variable"; exit 10; fi
+if [ "X" == "X$GITHUB_PASSWORD" ]; then echo "Need GITHUB_PASSWORD environment variable"; exit 10; fi
+if [ "X" == "X$GITHUB_EMAIL" ]; then echo "Need GITHUB_EMAIL environment variable"; exit 10; fi
+if [ "X" == "X$HOME" ]; then echo "Need HOME environment variable"; exit 10; fi
+
 cd $HOME
-git clone --recursive https://jenkins-starschema:Manager1@github.com/starschema/virtdb-apps.git virtdb-apps
+
+git clone --recursive https://$GITHUB_USER:$GITHUB_PASSWORD@github.com/starschema/virtdb-apps.git virtdb-apps
+if [ $? -ne 0 ]; then echo "Failed to clone virtdb-apps repository"; exit 10; fi
 echo Creating build $BUILDNO
 
 echo >>$HOME/.netrc
@@ -12,8 +19,8 @@ echo >>$HOME/.netrc
 
 cd $HOME/virtdb-apps
 
-git config --global user.name "jenkins-starschema"
-git config --global user.email jenkins@starschema.net
+git config --global user.name $GITHUB_USER
+git config --global user.email $GITHUB_EMAIL
 
 GPCONFIG_PATH="src/greenplum-config"
 NODE_CONNECTOR_PATH="src/common/node-connector"
@@ -22,6 +29,7 @@ NODE_CONNECTOR_PATH="src/common/node-connector"
 pushd src/common/proto
 gyp --depth=. proto.gyp
 make
+if [ $? -ne 0 ]; then echo "Failed to make proto"; exit 10; fi
 popd
 
 # -- figure out the next release number --
@@ -43,6 +51,7 @@ function release {
   popd
   echo $VERSION > version
   git push origin $VERSION
+  if [ $? -ne 0 ]; then echo "Failed to push to repo."; exit 10; fi
 }
 
 [[ ${1,,} == "release" ]] && RELEASE=true || RELEASE=false
@@ -56,10 +65,13 @@ popd
 echo "Building greenplum-config"
 pushd $GPCONFIG_PATH
 npm install
+if [ $? -ne 0 ]; then echo "npm install"; exit 10; fi
 echo "Node connector:"
+if [ !-e ../common/node-connector ] ; then echo "../common/node-connector doesn't exist"; exit 10; fi
 ls ../common/node-connector
 npm install ../common/node-connector
-echo "virtdb-connector"
+if [ $? -ne 0 ]; then echo "npm install ../common/node-connector failed"; exit 10; fi
+echo "virtdb-connector:"
 ls node_modules/virtdb-connector
 node_modules/gulp/bin/gulp.js build
 popd

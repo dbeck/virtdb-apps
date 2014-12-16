@@ -14,6 +14,6 @@ echo "successfully built $IMAGE_NAME"
 
 mkdir -p build-result
 chmod a+rwxt build-result
-docker run --rm=true -v $PWD/build-result:/home/virtdb-demo/build-result -t $IMAGE_NAME ./build-pgconfig.sh $*
+docker run --rm=true -e "GITHUB_EMAIL=$GITHUB_EMAIL" -e "GITHUB_USER=$GITHUB_USER" -e "GITHUB_PASSWORD=$GITHUB_PASSWORD" -v $PWD/build-result:/home/virtdb-demo/build-result -t $IMAGE_NAME ./build-pgconfig.sh $*
 ls -ltr $PWD/build-result
 
