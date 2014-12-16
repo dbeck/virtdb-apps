@@ -1,6 +1,6 @@
 {
   "name": "postgres-config",
-  "version": "1.5.7",
+  "version": "1.5.8",
   "description": "Postgres configurator service for VirtDB",
   "main": "out/index.js",
   "private": true,
