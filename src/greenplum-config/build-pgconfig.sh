@@ -38,11 +38,16 @@ function release {
   pushd $GPCONFIG_PATH
   VERSION=`npm version patch`
   git add package.json
-  if [ $? -ne 0 ]; then echo "failed to add package.json to patch"; exit 10; fi
+  if [ $? -ne 0 ]; then echo "Failed to add package.json to patch"; exit 10; fi
   git commit -m "Increased version number to $VERSION"
-  if [ $? -ne 0 ]; then echo "failed to commit patch"; exit 10; fi
+  if [ $? -ne 0 ]; then echo "Failed to commit patch"; exit 10; fi
+  git push
+  if [ $? -ne 0 ]; then echo "Failed to push to repo."; exit 10; fi
   git tag -f $VERSION
-  if [ $? -ne 0 ]; then echo "failed to tag repo"; exit 10; fi
+  if [ $? -ne 0 ]; then echo "Failed to tag repo"; exit 10; fi
+  git push origin $VERSION
+  if [ $? -ne 0 ]; then echo "Failed to push tag to repo."; exit 10; fi
+  exit 10
   popd
   RELEASE_PATH="$HOME/build-result/virtdb-dbconfig-$VERSION"
   mkdir -p $RELEASE_PATH
@@ -53,8 +58,6 @@ function release {
   rm -Rf virtdb-dbconfig-$VERSION
   popd
   echo $VERSION > version
-  git push origin $VERSION
-  if [ $? -ne 0 ]; then echo "Failed to push to repo."; exit 10; fi
 }
 
 [[ ${1,,} == "release" ]] && RELEASE=true || RELEASE=false
