@@ -19,6 +19,8 @@ echo >>$HOME/.netrc
 
 cd $HOME/virtdb-apps
 
+git --version
+git config --global push.default simple
 git config --global user.name $GITHUB_USER
 git config --global user.email $GITHUB_EMAIL
 
@@ -47,7 +49,6 @@ function release {
   if [ $? -ne 0 ]; then echo "Failed to tag repo"; exit 10; fi
   git push origin $VERSION
   if [ $? -ne 0 ]; then echo "Failed to push tag to repo."; exit 10; fi
-  exit 10
   popd
   RELEASE_PATH="$HOME/build-result/virtdb-dbconfig-$VERSION"
   mkdir -p $RELEASE_PATH
