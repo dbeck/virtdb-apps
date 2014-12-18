@@ -30,9 +30,10 @@
     "l": "0.0.1",
     "loglevel": "1.0.0",
     "minimist": "^1.1.0",
-    "node-protobuf": "1.2.0",
     "pg": "3.4.1",
     "source-map-support": "0.2.7",
+    "virtdb-connector": "git://github.com/starschema/node-virtdb-connector",
+    "virtdb-proto": "git://github.com/starschema/virtdb-proto",
     "zmq": "2.8.0"
   }
 }
