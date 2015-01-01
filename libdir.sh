@@ -12,6 +12,15 @@ else
     CMD="find $i -maxdepth 4 -name \"$FILE\" -type f -exec ./abspath {} \;"
     FOUND=`find $i -maxdepth 4 -name "$FILE" -type f -exec ./abspath {} \; 2>/dev/null`
     RET=$?
+
+    # try links too
+    if [ $RET -ne 0 ]
+    then
+      CMD="find $i -maxdepth 4 -name \"$FILE\" -type l -exec ./abspath {} \;"
+      FOUND=`find $i -maxdepth 4 -name "$FILE" -type l -exec ./abspath {} \; 2>/dev/null`
+      RET=$?
+    fi
+
     # echo "$CMD -> $RET"
     if [ $RET -eq 0 ]
     then
