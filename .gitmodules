@@ -1,4 +1,4 @@
 [submodule "src/common"]
 	path = src/common
-	url = https://github.com/starschema/virtdb-common.git
-	branch = master
+	url = https://github.com/dbeck/virtdb-common.git
+	branch = refactor-cleanup-2015-01
