@@ -29,6 +29,7 @@
     "minimist": "^1.1.0",
     "node-protobuf": "1.2.0",
     "source-map-support": "0.2.7",
+    "virtdb-provider": "git://github.com/starschema/node-virtdb-provider",
     "zmq": "2.7.0"
   }
 }
