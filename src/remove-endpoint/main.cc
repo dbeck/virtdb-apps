@@ -75,7 +75,6 @@ int main(int argc, char ** argv)
           to_remove->set_validforms(1000);
           eps_to_remove.push_back(to_remove);
         }
-        return true;
       };
       
       ep_clnt.register_endpoint(ep, process_endpoint);
