@@ -9,38 +9,38 @@ else
   for i in $PATHS
   do
     FOUND=`find $i -maxdepth 4 -name "$FILE" -type f -exec ./abspath {} \; 2>/dev/null`
-    RET=$?
-    if [ $RET -eq 0 ] 
+    RET=`echo $FOUND | grep -c "$FILE"`
+    if [ $RET -gt 0 ] 
     then
-      RET=1
+      RET=0
       for f in $FOUND
       do
         if [ -r $f ]
         then
-          RET=0
+          RET=1
         fi
       done
     fi
 
     # try links too
-    if [ $RET -ne 0 ]
+    if [ $RET -eq 0 ]
     then
       FOUND=`find $i -maxdepth 4 -name "$FILE" -type l -exec ./abspath {} \; 2>/dev/null`
-      RET=$?
-      if [ $RET -eq 0 ] 
+      RET=`echo $FOUND | grep -c "$FILE"`
+      if [ $RET -gt 0 ] 
       then
-        RET=1
+        RET=0
         for f in $FOUND
         do
           if [ -r $f ]
           then
-            RET=0
+            RET=1
           fi
         done
       fi
     fi
 
-    if [ $RET -eq 0 ]
+    if [ $RET -ne 0 ]
     then
       for f in $FOUND
       do
