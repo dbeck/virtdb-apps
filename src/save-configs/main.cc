@@ -78,7 +78,6 @@ int main(int argc, char ** argv)
       
       auto process_endpoint = [&](const pb::EndpointData & ep) {
         services.insert(ep.name());
-        return true;
       };
       
       ep_clnt.register_endpoint(ep, process_endpoint);

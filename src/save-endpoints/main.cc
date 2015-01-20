@@ -73,8 +73,6 @@ int main(int argc, char ** argv)
                     V_(file_name));
           
         }
-        
-        return true;
       };
       
       ep_clnt.register_endpoint(ep, process_endpoint);
