@@ -32,7 +32,9 @@ try
 catch e
     virtdb?.close()
     console.log e
+    return
 
 process.on "SIGINT", ->
+    console.log "Quitting."
     virtdb?.close()
     return

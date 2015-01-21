@@ -14,11 +14,12 @@ class MetaDataService
     # Public methods
     constructor: (request, @sendData) ->
         @schema = request.Schema
+        @schema = 'data'
         @regexp = request.Name
         @regexp = '^' + @regexp if @regexp[0] is not '^'
-        @regexp = @regexp + '$' if @regexp[@regexp.length - 1] is not '$' 
+        @regexp = @regexp + '$' if @regexp[@regexp.length - 1] is not '$'
         @withFields = request.WithFields
-        log.info V_(@withFiels)
+        log.info "WithFields:", V_(@withFields)
 
     process: =>
         #
