@@ -12,7 +12,7 @@ var argv = require('minimist')(process.argv.slice(2));
  */
 gulp.task('server', ['coffee'], function() {
   if (node) node.kill()
-  node = spawn('node', ['out/csvDataSource.js', '--name='+argv['name'], '--url='+argv['url']], {stdio: 'inherit'})
+  node = spawn('node', ['out/index.js', '--name='+argv['name'], '--url='+argv['url']], {stdio: 'inherit'})
   node.on('close', function (code) {
     if (code === 8) {
       console.log('Error detected, waiting for changes...');
@@ -36,7 +36,7 @@ gulp.task('coffee', function() {
 gulp.task('watch', ['coffee'], function()
 {
     gulp.watch(['./*.coffee'], ['coffee']);
-    gulp.watch(['out/csvDataSource.js'], function() {
+    gulp.watch(['out/index.js'], function() {
         gulp.start('server')
     })
 });
