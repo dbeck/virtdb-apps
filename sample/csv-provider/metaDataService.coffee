@@ -5,6 +5,7 @@ FieldData = require("./fieldData")
 async = require("async")
 log = require('virtdb-provider').log
 V_ = log.Variable
+FieldTypeDetector = require './fieldTypeDetector'
 
 class MetaDataService
     reply: []
@@ -40,10 +41,15 @@ class MetaDataService
                         Schema: @schema
                         Fields: []
                     first_row = true
+                    detector = new FieldTypeDetector(100)
 
                     on_record = (data) =>
                         if first_row
                             first_row = false
+                            detector.addHeader data
+                            return data
+                        else if not detector.enoughSamplesCollected()
+                            detector.addSample data
                             return data
                         else
                             transformer.end()
@@ -58,7 +64,7 @@ class MetaDataService
                                     current_table.Fields.push(
                                         Name: field
                                         Desc:
-                                            Type: 'STRING'
+                                            Type: detector.getFieldType field
                                     )
                                 @reply.Tables.push current_table
 
