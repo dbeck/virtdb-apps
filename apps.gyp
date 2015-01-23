@@ -3,7 +3,7 @@
     'proto_libdir' :      '<!(pkg-config --libs-only-L protobuf)',
     'zmq_libdir' :        '<!(pkg-config --libs-only-L libzmq)',
     'sodium_libdir':      '<!(./filedir_1.sh "libsodium.[ads]*" $HOME/libsodium-install)',
-    'sodium_lib':         '<!(./if_exists.sh <(sodium_libdir) "-lsodium" -L/none)',
+    'sodium_lib':         '<!(./if_exists.sh <(sodium_libdir) "-lsodium" -L/sodium/lib/not/found)',
     'app_ldflagsx':    [
                           '<!(./libdir_1.sh "libprotobuf.[ads]*" $HOME/protobuf-install /usr/local/lib)',
                           '<!(./libdir_1.sh "libzmq.[ads]*" $HOME/libzmq-install /usr/local/lib)',
@@ -124,30 +124,11 @@
       'dependencies':      [ 'src/common/common.gyp:common', ],
       'sources':           [ 'src/load-endpoint/main.cc', ],
     },
-
     {
-      'target_name':       'testdata-provider',
+      'target_name':       'simple-cache',
       'type':              'executable',
       'dependencies':      [ 'src/common/common.gyp:common', ],
-      'sources':           [ 'src/testdata-provider/main.cc', ],
-    },
-    {
-      'target_name':       'diag_client_sample',
-      'type':              'executable',
-      'dependencies':      [ 'src/common/common.gyp:common', ],
-      'sources':           [ 'sample/diag_client_sample.cc', ],
-    },
-    {
-      'target_name':       'config_client_sample',
-      'type':              'executable',
-      'dependencies':      [ 'src/common/common.gyp:common', ],
-      'sources':           [ 'sample/config_client_sample.cc', ],
-    },
-    {
-      'target_name':       'dataprovider_client_sample',
-      'type':              'executable',
-      'dependencies':      [ 'src/common/common.gyp:common', ],
-      'sources':           [ 'sample/dataprovider_client_sample.cc', ],
+      'sources':           [ 'src/simple-cache/main.cc', ],
     },
   ],
 }
