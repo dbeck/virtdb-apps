@@ -4,7 +4,7 @@
   "description": "Sample VirtDB data provider written in Coffeescript (handling CSV data)",
   "main": "out/csvDataSource.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha --compilers=coffee:coffee-script/register test/*.coffee"
   },
   "repository": {
     "type": "git",
@@ -20,7 +20,15 @@
   "devDependencies": {
     "gulp": "3.8.7",
     "gulp-coffee": "2.1.1",
-    "gulp-sourcemaps": "1.1.1"
+    "gulp-sourcemaps": "1.1.1",
+    "chai": "~1.9.2",
+    "coffee-script": "~1.8.0",
+    "gulp-coffee-istanbul": "^0.6.0",
+    "gulp-mocha": "~1.1.1",
+    "mocha": "~1.21.4",
+    "sinon": "^1.12.2",
+    "sinon-chai": "^2.6.0",
+    "source-map-support": "~0.2.7"
   },
   "dependencies": {
     "async": "0.9.0",
