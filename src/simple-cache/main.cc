@@ -9,6 +9,7 @@
 #include <dsproxy/query_proxy.hh>
 #include <dsproxy/column_proxy.hh>
 #include <dsproxy/meta_proxy.hh>
+#include <cachedb/store.hh>
 #include <util/exception.hh>
 #include <common.pb.h>
 #include <logger.hh>
@@ -19,6 +20,7 @@
 using namespace virtdb::interface;
 using namespace virtdb::connector;
 using namespace virtdb::dsproxy;
+using namespace virtdb::cachedb;
 
 namespace
 {
@@ -26,11 +28,11 @@ namespace
   int usage(const EXC & exc)
   {
     std::cerr << "Exception: " << exc.what() << "\n"
-    << "\n"
-    << "Usage: simple-cache <Service-Config-0MQ-EndPoint> <ServiceName>\n"
-    << "\n"
-    << " endpoint example: \n"
-    << "  \"tcp://localhost:65001\"\n\n";
+              << "\n"
+              << "Usage: simple-cache <Service-Config-0MQ-EndPoint> <ServiceName>\n"
+              << "\n"
+              << " endpoint example: \n"
+              << "  \"tcp://localhost:65001\"\n\n";
     return 100;
   }
   
@@ -84,16 +86,22 @@ int main(int argc, char ** argv)
 
     LOG_TRACE("connection to log and config services are initialized");
     
-    query_proxy    query_fwd(cfg_clnt);
-    meta_proxy     meta_fwd(cfg_clnt);
-    column_proxy * col_proxy_ptr = nullptr;
+    query_proxy     query_fwd(cfg_clnt);
+    meta_proxy      meta_fwd(cfg_clnt);
+    column_proxy *  col_proxy_ptr = nullptr;
+    store::sptr     store_sptr;
+    
+    // TODO : make these configurable
+    store_sptr.reset(new store{"/tmp/simple-cache",24*3600});
+    
+    std::mutex     query_mtx;
+    typedef std::pair<query_proxy::query_sptr, store::time_point> timed_query;
+    std::map<const std::string, timed_query> queries;
     
     auto on_data_handler = [&](const std::string & provider_name,
                                const std::string & channel,
                                const std::string & subscription,
-                               std::shared_ptr<pb::Column> data,
-                               std::string & new_channel_id,
-                               std::vector<std::string> & other_channels)
+                               std::shared_ptr<pb::Column> data)
     {
       if( !data )
       {
@@ -102,6 +110,36 @@ int main(int argc, char ** argv)
                   V_(channel) <<
                   V_(subscription));
         return;
+      }
+      store::sptr store_sptr_copy = store_sptr;
+      // store is initialized
+      if( store_sptr_copy )
+      {
+        std::string query_id = data->queryid();
+        timed_query tq;
+        {
+          std::unique_lock<std::mutex> l(query_mtx);
+          auto it = queries.find(query_id);
+          if( it != queries.end() )
+            tq = it->second;
+        }
+        // we have the query
+        if( tq.first )
+        {
+          try
+          {
+            store_sptr_copy->add_column(*(tq.first), tq.second, *data);
+          }
+          catch (const std::exception & e)
+          {
+            LOG_ERROR("failed to cache column for query" <<
+                      E_(e) << V_(query_id) <<
+                      V_(data->name()) << V_(data->seqno()) <<
+                      V_(data->endofdata()) <<
+                      V_(tq.first->schema()) <<
+                      V_(tq.first->table()));
+          }
+        }
       }
     };
     
@@ -140,41 +178,27 @@ int main(int argc, char ** argv)
       }
     };
     
-    auto on_new_query = [&](const std::string & id)
+    auto on_new_query = [&](const std::string & id,
+                            query_proxy::query_sptr q)
     {
       column_fwd.subscribe_query(id);
+      {
+        std::unique_lock<std::mutex> l(query_mtx);
+        queries[id] = std::make_pair(q,store::clock::now());
+      }
+      return query_proxy::forward_query;
     };
-    
-    /*
-    auto on_new_segment = [&](const std::string & query_id,
-                              const std::string & segment_id)
-    {
-      column_fwd.send_backlog(query_id,
-                              segment_id);
-    };
-    */
     
     auto on_resend_chunk = [&](const std::string & query_id,
-                               const std::string & segment_id,
                                std::set<std::string> & columns,
                                std::set<uint64_t> & blocks)
     {
       bool ret = true;
-      for( auto & col : columns )
-      {
-        for( auto block_id : blocks )
-        {
-          ret &= column_fwd.resend_message(query_id,
-                                           segment_id,
-                                           col,
-                                           block_id);
-        }
-      }
+      // TODO
       return ret;
     };
     
     query_fwd.watch_new_queries(on_new_query);
-    // query_fwd.watch_new_segments(on_new_segment);
     query_fwd.watch_resend_chunk(on_resend_chunk);
     
     
