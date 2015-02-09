@@ -128,13 +128,12 @@
       'target_name':       'simple-cache',
       'type':              'executable',
       'dependencies':      [
-                             'src/common/common.gyp:cachedb',
-                             'src/common/common.gyp:dsproxy',
+                             #'src/common/common.gyp:cachedb',
+                             #'src/common/common.gyp:dsproxy',
                              'src/common/common.gyp:common',
-                             'src/common/common.gyp:lz4',
-                             'src/common/common.gyp:rocksdb',
                            ],
-      'sources':           [ 'src/simple-cache/main.cc', ],
+      # 'sources':           [ 'src/simple-cache/main.cc', ],
+      'sources':           [ 'src/simple-cache/x.cc', ],
     },
   ],
 }
