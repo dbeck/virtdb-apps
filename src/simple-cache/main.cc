@@ -9,18 +9,22 @@
 #include <dsproxy/query_proxy.hh>
 #include <dsproxy/column_proxy.hh>
 #include <dsproxy/meta_proxy.hh>
-#include <cachedb/store.hh>
+#include <cachedb/db.hh>
+#include <cachedb/column_data.hh>
 #include <util/exception.hh>
+#include <util/relative_time.hh>
 #include <common.pb.h>
 #include <logger.hh>
 #include <map>
 #include <string>
 #include <iostream>
+#include <chrono>
 
 using namespace virtdb::interface;
 using namespace virtdb::connector;
 using namespace virtdb::dsproxy;
 using namespace virtdb::cachedb;
+using namespace virtdb::util;
 
 namespace
 {
@@ -89,13 +93,23 @@ int main(int argc, char ** argv)
     query_proxy     query_fwd(cfg_clnt);
     meta_proxy      meta_fwd(cfg_clnt);
     column_proxy *  col_proxy_ptr = nullptr;
-    store::sptr     store_sptr;
+    db              cache;
     
-    // TODO : make these configurable
-    store_sptr.reset(new store{"/tmp/simple-cache",24*3600});
+    
+    // add data templates here, so db can initialized column families
+    column_data     template_column_data;
+    template_column_data.default_columns();
+    db::storeable_ptr_vec_t column_families { &template_column_data };
+    
+    // init db:
+    if( !cache.init("/tmp/simple-cache-data", column_families) )
+    {
+      LOG_ERROR("failed to initialze cacche");
+    }
     
     std::mutex     query_mtx;
-    typedef std::pair<query_proxy::query_sptr, store::time_point> timed_query;
+    typedef std::chrono::system_clock::time_point timepoint_t;
+    typedef std::pair<query_proxy::query_sptr, timepoint_t> timed_query;
     std::map<const std::string, timed_query> queries;
     
     auto on_data_handler = [&](const std::string & provider_name,
@@ -111,35 +125,39 @@ int main(int argc, char ** argv)
                   V_(subscription));
         return;
       }
-      store::sptr store_sptr_copy = store_sptr;
-      // store is initialized
-      if( store_sptr_copy )
+      
+      // convert column data to be storeable
+      column_data dta;
+      dta.set(*data);
+      
+      relative_time rt;
+      
+      if( cache.exists(dta) )
       {
-        std::string query_id = data->queryid();
-        timed_query tq;
-        {
-          std::unique_lock<std::mutex> l(query_mtx);
-          auto it = queries.find(query_id);
-          if( it != queries.end() )
-            tq = it->second;
-        }
-        // we have the query
-        if( tq.first )
-        {
-          try
-          {
-            store_sptr_copy->add_column(*(tq.first), tq.second, *data);
-          }
-          catch (const std::exception & e)
-          {
-            LOG_ERROR("failed to cache column for query" <<
-                      E_(e) << V_(query_id) <<
-                      V_(data->name()) << V_(data->seqno()) <<
-                      V_(data->endofdata()) <<
-                      V_(tq.first->schema()) <<
-                      V_(tq.first->table()));
-          }
-        }
+        // we already have this column data
+        LOG_TRACE("column data is already in the cache" <<
+                  V_(provider_name)   << V_(channel)      << V_(subscription) <<
+                  V_(data->queryid()) << V_(data->name()) <<
+                  V_(dta.key())       << V_(dta.len())    <<
+                 "took" << V_(rt.get_usec()));
+        
+      }
+      else if( !cache.set(dta) )
+      {
+        // update cache with the data
+        LOG_ERROR("failed to update column data" <<
+                  V_(provider_name)   << V_(channel)      << V_(subscription) <<
+                  V_(data->queryid()) << V_(data->name()) <<
+                  V_(dta.key())       << V_(dta.len())
+                  );
+      }
+      else
+      {
+        LOG_INFO("data stored in the cache" <<
+                 V_(provider_name)   << V_(channel)      << V_(subscription) <<
+                 V_(data->queryid()) << V_(data->name()) <<
+                 V_(dta.key())       << V_(dta.len())    <<
+                 "took" << V_(rt.get_usec()));
       }
     };
     
@@ -162,7 +180,7 @@ int main(int argc, char ** argv)
       if( config_parameters.count("user_config/Data Provider/") )
       {
         std::string data_provider{config_parameters["user_config/Data Provider/"]};
-        LOG_INFO("configure using" << V_(data_provider));
+        LOG_TRACE("configure using" << V_(data_provider));
         if( query_fwd.reconnect(data_provider) )
         {
           LOG_INFO("query proxy connected to" << V_(data_provider));
@@ -184,7 +202,7 @@ int main(int argc, char ** argv)
       column_fwd.subscribe_query(id);
       {
         std::unique_lock<std::mutex> l(query_mtx);
-        queries[id] = std::make_pair(q,store::clock::now());
+        queries[id] = std::make_pair(q,std::chrono::system_clock::now());
       }
       return query_proxy::forward_query;
     };
@@ -200,7 +218,6 @@ int main(int argc, char ** argv)
     
     query_fwd.watch_new_queries(on_new_query);
     query_fwd.watch_resend_chunk(on_resend_chunk);
-    
     
     auto on_disconnect = [&]()
     {
@@ -220,7 +237,7 @@ int main(int argc, char ** argv)
     {
       if( cfg->name() == ep_clnt.name() )
       {
-        LOG_INFO("Received config (SUB):" <<
+        LOG_TRACE("Received config (SUB):" <<
                  V_(provider_name) <<
                  V_(channel) <<
                  V_(subscription) <<
