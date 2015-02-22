@@ -125,12 +125,18 @@ int main(int argc, char ** argv)
                   V_(subscription));
         return;
       }
+      LOG_INFO("received:" <<
+               V_(data->queryid()) <<
+               V_(data->name()) <<
+               V_(data->ByteSize()) <<
+               V_((int)data->data().type()) <<
+               V_(data->uncompressedsize()));
+
+      relative_time rt;
       
       // convert column data to be storeable
       column_data dta;
       dta.set(*data);
-      
-      relative_time rt;
       
       if( cache.exists(dta) )
       {
