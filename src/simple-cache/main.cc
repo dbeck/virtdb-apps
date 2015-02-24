@@ -9,8 +9,12 @@
 #include <dsproxy/query_proxy.hh>
 #include <dsproxy/column_proxy.hh>
 #include <dsproxy/meta_proxy.hh>
+
 #include <cachedb/db.hh>
 #include <cachedb/column_data.hh>
+#include <cachedb/hash_util.hh>
+#include <cachedb/query_table_log.hh>
+
 #include <util/exception.hh>
 #include <util/relative_time.hh>
 #include <common.pb.h>
@@ -63,6 +67,39 @@ namespace
       convert_config(new_prefix, c, result);
     }
   }
+  
+  class query_data
+  {
+    query_proxy::query_sptr                query_;
+    std::chrono::system_clock::time_point  start_;
+    std::string                            tab_hash_;
+    hash_util::colhash_map                 col_hashes_;
+    
+  public:
+    typedef std::shared_ptr<query_data> sptr;
+    
+    query_data(query_proxy::query_sptr q)
+    : query_{q},
+      start_{std::chrono::system_clock::now()}
+    {
+      hash_util::hash_query(*query_,
+                            tab_hash_,
+                            col_hashes_);
+    }
+    
+    bool
+    has_cached_data(db & cache)
+    {
+      query_table_log qtl;
+      qtl.key(tab_hash_);
+      if( cache.fetch(qtl) )
+      {
+      }
+      return false;
+    }
+    
+    virtual ~query_data() {}
+  };
 }
 
 
@@ -107,10 +144,8 @@ int main(int argc, char ** argv)
       LOG_ERROR("failed to initialze cacche");
     }
     
-    std::mutex     query_mtx;
-    typedef std::chrono::system_clock::time_point timepoint_t;
-    typedef std::pair<query_proxy::query_sptr, timepoint_t> timed_query;
-    std::map<const std::string, timed_query> queries;
+    std::mutex                                     query_mtx;
+    std::map<const std::string, query_data::sptr>  queries;
     
     auto on_data_handler = [&](const std::string & provider_name,
                                const std::string & channel,
@@ -125,12 +160,12 @@ int main(int argc, char ** argv)
                   V_(subscription));
         return;
       }
-      LOG_INFO("received:" <<
-               V_(data->queryid()) <<
-               V_(data->name()) <<
-               V_(data->ByteSize()) <<
-               V_((int)data->data().type()) <<
-               V_(data->uncompressedsize()));
+      LOG_TRACE("received:" <<
+                V_(data->queryid()) <<
+                V_(data->name()) <<
+                V_(data->ByteSize()) <<
+                V_((int)data->data().type()) <<
+                V_(data->uncompressedsize()));
 
       relative_time rt;
       
@@ -206,11 +241,18 @@ int main(int argc, char ** argv)
                             query_proxy::query_sptr q)
     {
       column_fwd.subscribe_query(id);
+      query_data::sptr tmp_query{new query_data{q}};
+      
+      if( tmp_query->has_cached_data(cache) )
+      {
+        return query_proxy::dont_forward;
+      }
+      else
       {
         std::unique_lock<std::mutex> l(query_mtx);
-        queries[id] = std::make_pair(q,std::chrono::system_clock::now());
+        queries[id] = tmp_query;
+        return query_proxy::forward_query;
       }
-      return query_proxy::forward_query;
     };
     
     auto on_resend_chunk = [&](const std::string & query_id,
