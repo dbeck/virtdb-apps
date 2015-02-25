@@ -132,7 +132,11 @@
                              'src/common/common.gyp:dsproxy',
                              'src/common/common.gyp:common',
                            ],
-      'sources':           [ 'src/simple-cache/main.cc', ],
+      'sources':           [
+                             'src/simple-cache/main.cc',
+                             'src/simple-cache/query_data.cc',
+                             'src/simple-cache/query_data.hh',
+                           ],
     },
   ],
 }

@@ -17,6 +17,7 @@
 
 #include <util/exception.hh>
 #include <util/relative_time.hh>
+#include <util/active_queue.hh>
 #include <common.pb.h>
 #include <logger.hh>
 #include <map>
@@ -24,11 +25,14 @@
 #include <iostream>
 #include <chrono>
 
+#include "query_data.hh"
+
 using namespace virtdb::interface;
 using namespace virtdb::connector;
 using namespace virtdb::dsproxy;
 using namespace virtdb::cachedb;
 using namespace virtdb::util;
+using namespace virtdb::simple_cache;
 
 namespace
 {
@@ -66,40 +70,7 @@ namespace
     {
       convert_config(new_prefix, c, result);
     }
-  }
-  
-  class query_data
-  {
-    query_proxy::query_sptr                query_;
-    std::chrono::system_clock::time_point  start_;
-    std::string                            tab_hash_;
-    hash_util::colhash_map                 col_hashes_;
-    
-  public:
-    typedef std::shared_ptr<query_data> sptr;
-    
-    query_data(query_proxy::query_sptr q)
-    : query_{q},
-      start_{std::chrono::system_clock::now()}
-    {
-      hash_util::hash_query(*query_,
-                            tab_hash_,
-                            col_hashes_);
-    }
-    
-    bool
-    has_cached_data(db & cache)
-    {
-      query_table_log qtl;
-      qtl.key(tab_hash_);
-      if( cache.fetch(qtl) )
-      {
-      }
-      return false;
-    }
-    
-    virtual ~query_data() {}
-  };
+  }  
 }
 
 
@@ -144,8 +115,8 @@ int main(int argc, char ** argv)
       LOG_ERROR("failed to initialze cacche");
     }
     
-    std::mutex                                     query_mtx;
-    std::map<const std::string, query_data::sptr>  queries;
+    std::mutex                               query_mtx;
+    std::map<std::string, query_data::sptr>  queries;
     
     auto on_data_handler = [&](const std::string & provider_name,
                                const std::string & channel,
@@ -173,6 +144,13 @@ int main(int argc, char ** argv)
       column_data dta;
       dta.set(*data);
       
+      // query data
+      query_data::sptr qdata;
+      {
+        std::unique_lock<std::mutex> l(query_mtx);
+        qdata = queries[data->queryid()];
+      }
+      
       if( cache.exists(dta) )
       {
         // we already have this column data
@@ -191,6 +169,11 @@ int main(int argc, char ** argv)
                   V_(data->queryid()) << V_(data->name()) <<
                   V_(dta.key())       << V_(dta.len())
                   );
+        
+        std::ostringstream os;
+        os << "failed to store column data for {" << data->queryid() << '/' << data->name() << ':' << data->seqno() << "}";
+        qdata->error_info(os.str());
+        return;
       }
       else
       {
@@ -200,6 +183,18 @@ int main(int argc, char ** argv)
                  V_(dta.key())       << V_(dta.len())    <<
                  "took" << V_(rt.get_usec()));
       }
+      
+      const std::string & err_info = qdata->error_info();
+      
+      if( !err_info.empty() )
+      {
+        LOG_TRACE("not storing column admin information because of current error state" << V_(err_info));
+        return;
+      }
+
+      
+      
+      
     };
     
     column_proxy column_fwd(cfg_clnt, on_data_handler);
@@ -237,6 +232,14 @@ int main(int argc, char ** argv)
       }
     };
     
+    auto send_cached_data = [&](query_data::sptr qd)
+    {
+      // TODO : gather and send cached data
+      LOG_ERROR("TODO : implement sending cached data" << V_(qd->query()->queryid()));
+    };
+    
+    active_queue<query_data::sptr,1000> cached_data_sender{ 1, send_cached_data };
+    
     auto on_new_query = [&](const std::string & id,
                             query_proxy::query_sptr q)
     {
@@ -245,6 +248,7 @@ int main(int argc, char ** argv)
       
       if( tmp_query->has_cached_data(cache) )
       {
+        cached_data_sender.push(tmp_query);
         return query_proxy::dont_forward;
       }
       else
@@ -260,7 +264,11 @@ int main(int argc, char ** argv)
                                std::set<uint64_t> & blocks)
     {
       bool ret = true;
-      // TODO
+      std::ostringstream os_columns;
+      std::ostringstream os_blocks;
+      for( auto const & c : columns ) { os_columns << c << ' '; }
+      for( auto const & b : blocks )  { os_blocks << b << ' '; }
+      LOG_ERROR("resend chunk is not supported" <<  V_(query_id) << V_(os_columns.str()) << V_(os_blocks.str()));
       return ret;
     };
     
@@ -342,9 +350,7 @@ int main(int argc, char ** argv)
             cfg_data = cfg_req.add_configdata();
         }
         cfg_data->set_key("");
-        std::vector<std::string> requested_config_values{
-          "Data Provider",
-        };
+        std::vector<std::string> requested_config_values{ "Data Provider", };
         
         for( auto const & v : requested_config_values )
         {
