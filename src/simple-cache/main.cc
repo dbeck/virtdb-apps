@@ -14,6 +14,9 @@
 #include <cachedb/column_data.hh>
 #include <cachedb/hash_util.hh>
 #include <cachedb/query_table_log.hh>
+#include <cachedb/query_column_block.hh>
+#include <cachedb/query_column_job.hh>
+#include <cachedb/query_column_log.hh>
 
 #include <util/exception.hh>
 #include <util/relative_time.hh>
@@ -103,16 +106,34 @@ int main(int argc, char ** argv)
     column_proxy *  col_proxy_ptr = nullptr;
     db              cache;
     
-    
-    // add data templates here, so db can initialized column families
-    column_data     template_column_data;
-    template_column_data.default_columns();
-    db::storeable_ptr_vec_t column_families { &template_column_data };
-    
-    // init db:
-    if( !cache.init("/tmp/simple-cache-data", column_families) )
+    // gather column family info
     {
-      LOG_ERROR("failed to initialze cacche");
+      // add data templates here, so db can initialized column families
+      column_data         template_column_data;
+      query_table_log     template_query_table_log;
+      query_column_block  template_query_column_block;
+      query_column_job    template_query_column_job;
+      query_column_log    template_query_column_log;
+
+      template_column_data.default_columns();
+      template_query_table_log.default_columns();
+      template_query_column_block.default_columns();
+      template_query_column_job.default_columns();
+      template_query_column_log.default_columns();
+      
+      db::storeable_ptr_vec_t column_families {
+        &template_column_data,
+        &template_query_table_log,
+        &template_query_column_block,
+        &template_query_column_job,
+        &template_query_column_log
+      };
+      
+      // init db:
+      if( !cache.init("/tmp/simple-cache-data", column_families) )
+      {
+        LOG_ERROR("failed to initialze cacche");
+      }
     }
     
     std::mutex                               query_mtx;
@@ -191,10 +212,46 @@ int main(int argc, char ** argv)
         LOG_TRACE("not storing column admin information because of current error state" << V_(err_info));
         return;
       }
-
+      
+      query_column_block qcb;
+      if( qdata->store_column_block(cache,
+                                    data->name(),
+                                    dta.key(),
+                                    data->seqno(),
+                                    qcb) == false )
+      {
+        std::ostringstream os;
+        os << "failed to store quer_column_block data for {" << data->queryid() << '/' << data->name() << ':' << data->seqno() << "}";
+        qdata->error_info(os.str());
+        return;
+      }
+      
+      LOG_TRACE("store_column_block done" <<
+                V_(provider_name)   << V_(channel)      << V_(subscription) <<
+                V_(data->queryid()) << V_(data->name()) <<
+                V_(dta.key())       << V_(dta.len())    <<
+                "took" << V_(rt.get_usec()));
       
       
+      query_column_job qcj;
+      if( qdata->update_column_job(cache,
+                                   data->name(),
+                                   data->seqno(),
+                                   data->endofdata(),
+                                   qcj) == false )
+      {
+        std::ostringstream os;
+        os << "failed to store quer_column_job data for {" << data->queryid() << '/' << data->name() << ':' << data->seqno() << "}";
+        qdata->error_info(os.str());
+        return;
+      }
       
+      LOG_TRACE("store_column_job done" <<
+                V_(provider_name)   << V_(channel)      << V_(subscription) <<
+                V_(data->queryid()) << V_(data->name()) <<
+                V_(dta.key())       << V_(dta.len())    <<
+                V_(qcj.max_block()) << V_(qcj.block_count()) <<
+                "took" << V_(rt.get_usec()));
     };
     
     column_proxy column_fwd(cfg_clnt, on_data_handler);

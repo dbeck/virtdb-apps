@@ -4,6 +4,10 @@
 #include <cachedb/hash_util.hh>
 #include <cachedb/db.hh>
 #include <cachedb/query_table_log.hh>
+#include <cachedb/query_column_block.hh>
+#include <cachedb/query_column_job.hh>
+#include <cachedb/query_column_log.hh>
+
 #include <memory>
 #include <chrono>
 
@@ -35,10 +39,28 @@ namespace virtdb { namespace simple_cache {
                int64_t cache_timeout_seconds=60);
     
     
-    bool has_cached_data(cachedb::db & cache);
-    bool store_column_block(cachedb::db & cache,
-                            const std::string & colname,
-                            const std::string & column_hash);
+    bool
+    has_cached_data(cachedb::db & cache);
+    
+    bool
+    store_column_block(cachedb::db & cache,
+                       const std::string & colname,
+                       const std::string & column_hash,
+                       size_t seq_no,
+                       cachedb::query_column_block & qcb);
+
+    bool
+    update_column_job(cachedb::db & cache,
+                      const std::string & colname,
+                      size_t seq_no,
+                      bool last,
+                      cachedb::query_column_job & qcj);
+
+    bool
+    update_column_log(cachedb::db & cache,
+                      const std::string & colname,
+                      const cachedb::query_column_job & qcj,
+                      cachedb::query_column_log & qcl);
     
     virtual ~query_data();
   };

@@ -1,6 +1,8 @@
 #include "query_data.hh"
 #include <logger.hh>
 
+using namespace virtdb::cachedb;
+
 namespace virtdb { namespace simple_cache {
   
   dsproxy::query_proxy::query_sptr
@@ -101,10 +103,75 @@ namespace virtdb { namespace simple_cache {
   bool
   query_data::store_column_block(cachedb::db & cache,
                                  const std::string & colname,
-                                 const std::string & column_hash)
+                                 const std::string & column_hash,
+                                 size_t seq_no,
+                                 cachedb::query_column_block & qcb)
   {
-    THROW_("implement me");
-    return false;
+    qcb.key(this->col_hash(colname), start_, seq_no);
+    qcb.column_hash(column_hash);
+    size_t res = cache.set(qcb);
+    if( res != 1 )
+    {
+      LOG_ERROR("failed to store query_column_block" <<
+                V_(query()->queryid()) <<
+                V_(query()->schema()) <<
+                V_(query()->table()) <<
+                V_(colname) <<
+                V_(seq_no) <<
+                V_(column_hash) <<
+                V_(res) );
+      return false;
+    }
+    else
+    {
+      return true;
+    }
+  }
+  
+  bool
+  query_data::update_column_job(cachedb::db & cache,
+                                const std::string & colname,
+                                size_t seq_no,
+                                bool last,
+                                cachedb::query_column_job & qcj)
+  {
+    qcj.key(this->col_hash(colname), start_);
+    size_t res = cache.fetch(qcj);
+    if( qcj.is_complete() )
+    {
+      LOG_ERROR("unexpected state" <<
+                V_(qcj.clazz()) <<
+                V_(query()->queryid()) <<
+                V_(query()->schema()) <<
+                V_(query()->table()) <<
+                V_(colname) <<
+                V_(seq_no) <<
+                V_(last) <<
+                V_(qcj.is_complete()) <<
+                V_(qcj.max_block()) <<
+                V_(qcj.block_count()) <<
+                V_(res));
+      return false;
+    }
+    
+    // set properties and update database
+    qcj.is_complete(last);
+    if( qcj.max_block() < seq_no ) qcj.max_block(seq_no);
+    qcj.block_count(qcj.block_count()+1);
+    res = cache.set(qcj);
+    return (res >= 3); // at least the number of columns
+  }
+  
+  bool
+  query_data::update_column_log(cachedb::db & cache,
+                                const std::string & colname,
+                                const cachedb::query_column_job & qcj,
+                                cachedb::query_column_log & qcl)
+  {
+    qcl.key(this->col_hash(colname));
+    size_t res = cache.fetch(qcl);
+    
+    
   }
   
   query_data::~query_data()
