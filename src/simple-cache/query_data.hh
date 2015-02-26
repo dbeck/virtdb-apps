@@ -3,24 +3,32 @@
 #include <dsproxy/query_proxy.hh>
 #include <cachedb/hash_util.hh>
 #include <cachedb/db.hh>
-#include <cachedb/query_table_log.hh>
 #include <cachedb/query_column_block.hh>
 #include <cachedb/query_column_job.hh>
 #include <cachedb/query_column_log.hh>
+#include <cachedb/query_table_block.hh>
+#include <cachedb/query_table_job.hh>
+#include <cachedb/query_table_log.hh>
 
 #include <memory>
 #include <chrono>
+#include <map>
+#include <set>
 
 namespace virtdb { namespace simple_cache {
   
   class query_data
   {
+    typedef std::set<std::string>             colhash_set_t;
+    typedef std::map<size_t,colhash_set_t>    block_hash_set_t;
+    
     dsproxy::query_proxy::query_sptr          query_;
     std::chrono::system_clock::time_point     start_;
     std::string                               tab_hash_;
     cachedb::hash_util::colhash_map           col_hashes_;
     int64_t                                   timeout_seconds_;
     std::string                               error_info_;
+    block_hash_set_t                          complete_map_;
     
   public:
     typedef std::shared_ptr<query_data> sptr;
@@ -49,6 +57,12 @@ namespace virtdb { namespace simple_cache {
                        size_t seq_no,
                        cachedb::query_column_block & qcb);
 
+    bool
+    update_table_block(cachedb::db & cache,
+                       const std::string & colname,
+                       size_t seq_no,
+                       cachedb::query_table_block & qtb);
+    
     bool
     update_column_job(cachedb::db & cache,
                       const std::string & colname,

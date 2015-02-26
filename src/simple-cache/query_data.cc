@@ -129,6 +129,33 @@ namespace virtdb { namespace simple_cache {
   }
   
   bool
+  query_data::update_table_block(cachedb::db & cache,
+                                 const std::string & colname,
+                                 size_t seq_no,
+                                 cachedb::query_table_block & qtb)
+  {
+    qtb.key(tab_hash_, start_, seq_no);
+    const std::string & colhash = this->col_hash(colname);
+    size_t res = cache.fetch(qtb);
+    auto it = complete_map_.find(seq_no);
+    if( it == complete_map_.end() )
+    {
+      auto rit = complete_map_.insert(std::make_pair(seq_no, colhash_set_t()));
+      it = rit.first;
+    }
+    it->second.insert(colhash);
+    
+    // set properties
+    qtb.n_columns(col_hashes_.size());
+    qtb.n_columns_complete(it->second.size());
+    qtb.is_complete(col_hashes_.size() == it->second.size());
+    
+    // update database
+    res = cache.set(qtb);
+    return (res >= 3);
+  }
+  
+  bool
   query_data::update_column_job(cachedb::db & cache,
                                 const std::string & colname,
                                 size_t seq_no,
@@ -171,7 +198,17 @@ namespace virtdb { namespace simple_cache {
     qcl.key(this->col_hash(colname));
     size_t res = cache.fetch(qcl);
     
+    // make the previous entry obsolete
+    qcl.t1_completed_at(qcl.t0_completed_at());
+    qcl.t1_nblocks(qcl.t0_nblocks());
     
+    // update the current entry
+    qcl.t0_completed_at(start_);
+    qcl.t0_nblocks(qcj.block_count());
+    
+    // update database
+    res = cache.set(qcl);
+    return (res >= 4);
   }
   
   query_data::~query_data()
