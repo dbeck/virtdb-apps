@@ -243,7 +243,10 @@ int main(int argc, char ** argv)
           return;
         }
         
-        // TODO : qdata expiry
+        // TODO : query data expiry
+        LOG_INFO("successfully cache table" <<
+                 V_(provider_name)   << V_(data->queryid()) << V_(data->name()) <<
+                 V_(dta.key())       << V_(dta.len())       << "took" << V_(rt.get_usec()));
       }
     };
     
@@ -292,6 +295,8 @@ int main(int argc, char ** argv)
       size_t res = cache.fetch(qtl);
       
       std::string query_id{qd->query()->queryid()};
+      std::string schema{qd->query()->schema()};
+      std::string table{qd->query()->table()};
       
       LOG_TRACE("reading cache based on query_table_log" <<
                 V_(query_id) <<
@@ -301,9 +306,34 @@ int main(int argc, char ** argv)
                 V_(qtl.property_cref(qtl.qn_t0_completed_at)) <<
                 V_(qtl.t0_nblocks()));
       
-      if( res < 3 ) { LOG_ERROR("TODO"); return; }
-      if( qtl.t0_nblocks() == 0 ) { LOG_ERROR("TODO"); return; }
-      if( qtl.n_columns() != qd->col_hashes().size() ) { LOG_ERROR("TODO"); return; }
+      if( res < 3 )
+      {
+        LOG_ERROR("failed to fecth query_table_log" <<
+                  V_(query_id) <<
+                  V_(schema) <<
+                  V_(table) <<
+                  V_(res));
+        return false;
+      }
+      if( qtl.t0_nblocks() == 0 )
+      {
+        LOG_ERROR("query_table_log has no block number info" <<
+                  V_(query_id) <<
+                  V_(schema) <<
+                  V_(table) <<
+                  V_(qtl.t0_nblocks()));
+        return false;
+      }
+      if( qtl.n_columns() != qd->col_hashes().size() )
+      {
+        LOG_ERROR("inconsistent column count in query_table_log" <<
+                  V_(query_id) <<
+                  V_(schema) <<
+                  V_(table) <<
+                  V_(qtl.n_columns()) <<
+                  V_(qd->col_hashes().size()));
+        return false;
+      }
       
       auto const & col_hashes = qd->col_hashes();
       
@@ -319,16 +349,44 @@ int main(int argc, char ** argv)
           query_column_block qcb;
           qcb.key(ch.second, qtl.t0_completed_at(), bn);
           size_t res = cache.fetch(qcb);
-          if( res < 1 ) { LOG_ERROR("TODO"); return; }
+          if( res < 1 )
+          {
+            LOG_ERROR("failed to fetch query_column_block" <<
+                      V_(query_id) <<
+                      V_(schema) <<
+                      V_(table) <<
+                      V_(res) <<
+                      V_(bn));
+            return false;
+          }
           
           column_data cd;
           cd.key(qcb.column_hash());
           res = cache.fetch(cd);
-          if( res < 1 ) { LOG_ERROR("TODO"); return; }
+          if( res < 1 )
+          {
+            LOG_ERROR("failed to fetch column_data" <<
+                      V_(query_id) <<
+                      V_(schema) <<
+                      V_(table) <<
+                      V_(res) <<
+                      V_(cd.key()));
+            return false;
+          }
           
           std::shared_ptr<pb::Column> data{new pb::Column};
           auto parsed = data->ParsePartialFromString(cd.data());
-          if( !parsed ) { LOG_ERROR("TODO"); return; }
+          if( !parsed )
+          {
+            LOG_ERROR("failed to parse column_data" <<
+                      V_(query_id) <<
+                      V_(schema) <<
+                      V_(table) <<
+                      V_(res) <<
+                      V_(cd.len()) <<
+                      V_(cd.key()));
+            return false;
+          }
           
           // align data with query
           data->set_queryid(qd->query()->queryid());
@@ -348,13 +406,16 @@ int main(int argc, char ** argv)
       
       LOG_INFO("cache returned" <<
                V_(query_id) <<
+               V_(schema) <<
+               V_(table) <<
                V_(total_blocks) <<
                V_(total_bytes) <<
                V_(columns) <<
                "took" << V_(ms));
+      return true;
     };
     
-    active_queue<query_data::sptr,1000> cached_data_sender{ 1, send_cached_data };
+    // active_queue<query_data::sptr,1000> cached_data_sender{ 1, send_cached_data };
     
     auto on_new_query = [&](const std::string & id,
                             query_proxy::query_sptr q)
@@ -363,8 +424,18 @@ int main(int argc, char ** argv)
       
       if( tmp_query->has_cached_data(cache) )
       {
-        cached_data_sender.push(tmp_query);
-        return query_proxy::dont_forward;
+        // cached_data_sender.push(tmp_query);
+        if( send_cached_data(tmp_query) )
+        {
+          return query_proxy::dont_forward;
+        }
+        else
+        {
+          std::unique_lock<std::mutex> l(query_mtx);
+          column_fwd.subscribe_query(id);
+          queries[id] = tmp_query;
+          return query_proxy::forward_query;
+        }
       }
       else
       {

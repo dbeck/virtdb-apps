@@ -1,3 +1,8 @@
+#ifdef RELEASE
+#define LOG_TRACE_IS_ENABLED false
+#define LOG_SCOPED_IS_ENABLED false
+#endif //RELEASE
+
 #include "query_data.hh"
 #include <logger.hh>
 
@@ -202,6 +207,7 @@ namespace virtdb { namespace simple_cache {
         return false;
       }
     }
+    LOG_TRACE("complete" << V_(seq_no));
     return true;
   }
   
