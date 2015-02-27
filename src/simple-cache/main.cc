@@ -147,7 +147,7 @@ int main(int argc, char ** argv)
         return;
       }
 
-      relative_time rt;
+      // relative_time rt;
       
       // convert column data to be storeable
       column_data dta;
@@ -214,9 +214,9 @@ int main(int argc, char ** argv)
         return;
       }
       
-      LOG_TRACE("update_table_block done" <<
+      /*LOG_TRACE("update_table_block done" <<
                 V_(provider_name)   << V_(data->queryid()) << V_(data->name()) <<
-                V_(dta.key())       << V_(dta.len())       << "took" << V_(rt.get_usec()));
+                V_(dta.key())       << V_(dta.len())       << "took" << V_(rt.get_usec())); */
       
       if( data->endofdata() &&
           qdata->is_complete(data->seqno()) )
@@ -233,7 +233,7 @@ int main(int argc, char ** argv)
         // TODO : query data expiry
         LOG_INFO("successfully cache table" <<
                  V_(provider_name)   << V_(data->queryid()) << V_(data->name()) <<
-                 V_(dta.key())       << V_(dta.len())       << "took" << V_(rt.get_usec()));
+                 V_(dta.key())       << V_(dta.len()) );//      << "took" << V_(rt.get_usec()));
       }
     };
     
@@ -270,6 +270,55 @@ int main(int argc, char ** argv)
           LOG_INFO("column proxy connected to" << V_(data_provider));
         }
       }
+    };
+    
+    auto fetch_column = [&](const std::string & column_hash,
+                            const std::chrono::system_clock::time_point & tp,
+                            const std::string & name,
+                            const std::string & query_id,
+                            size_t seq_no,
+                            size_t & len)
+    {
+      std::shared_ptr<pb::Column> data;
+      query_column_block qcb;
+      qcb.key(column_hash, tp, seq_no);
+      size_t res = cache.fetch(qcb);
+      if( res < 1 )
+      {
+        /* LOG_ERROR("failed to fetch query_column_block" <<
+                  V_(query_id) << V_(name) <<
+                  V_(res) << V_(seq_no)); */
+        return data;
+      }
+      
+      column_data cd;
+      cd.key(qcb.column_hash());
+      res = cache.fetch(cd);
+      if( res < 1 )
+      {
+        /* LOG_ERROR("failed to fetch column_data" <<
+                  V_(query_id) << V_(name) <<
+                  V_(res) << V_(seq_no) << V_(cd.key())); */
+        return data;
+      }
+      len = cd.len();
+      
+      data.reset(new pb::Column);
+      auto parsed = data->ParsePartialFromString(cd.data());
+      if( !parsed )
+      {
+        /* LOG_ERROR("failed to parse column_data" <<
+                  V_(query_id) << V_(name) <<
+                  V_(res) << V_(cd.len()) << V_(cd.key())); */
+        data.reset();
+        return data;
+      }
+      
+      // align data with query
+      data->set_queryid(query_id);
+      data->set_name(name);
+      data->set_seqno(seq_no);
+      return data;
     };
     
     auto send_cached_data = [&](query_data::sptr qd)
@@ -333,59 +382,20 @@ int main(int argc, char ** argv)
         
         for( auto const & ch : col_hashes )
         {
-          query_column_block qcb;
-          qcb.key(ch.second, qtl.t0_completed_at(), bn);
-          size_t res = cache.fetch(qcb);
-          if( res < 1 )
-          {
-            LOG_ERROR("failed to fetch query_column_block" <<
-                      V_(query_id) <<
-                      V_(schema) <<
-                      V_(table) <<
-                      V_(res) <<
-                      V_(bn));
-            return false;
-          }
-          
-          column_data cd;
-          cd.key(qcb.column_hash());
-          res = cache.fetch(cd);
-          if( res < 1 )
-          {
-            LOG_ERROR("failed to fetch column_data" <<
-                      V_(query_id) <<
-                      V_(schema) <<
-                      V_(table) <<
-                      V_(res) <<
-                      V_(cd.key()));
-            return false;
-          }
-          
-          std::shared_ptr<pb::Column> data{new pb::Column};
-          auto parsed = data->ParsePartialFromString(cd.data());
-          if( !parsed )
-          {
-            LOG_ERROR("failed to parse column_data" <<
-                      V_(query_id) <<
-                      V_(schema) <<
-                      V_(table) <<
-                      V_(res) <<
-                      V_(cd.len()) <<
-                      V_(cd.key()));
-            return false;
-          }
-          
-          // align data with query
-          data->set_queryid(qd->query()->queryid());
-          data->set_name(ch.first);
-          data->set_seqno(bn);
+          size_t len = 0;
+          auto data = fetch_column(ch.second,
+                                   qtl.t0_completed_at(),
+                                   ch.first,
+                                   query_id,
+                                   bn,
+                                   len);
           if( bn == qtl.t0_nblocks()-1 )
             data->set_endofdata(true);
 
           col_proxy_ptr->publish(data);
           
           ++total_blocks;
-          total_bytes += cd.len();
+          total_bytes += len;
         }
       }
       
@@ -399,6 +409,9 @@ int main(int argc, char ** argv)
                V_(total_bytes) <<
                V_(columns) <<
                "took" << V_(ms));
+      
+      // set start point so we can support resend queries too
+      qd->start(qtl.t0_completed_at());
       return true;
     };
     
@@ -407,7 +420,17 @@ int main(int argc, char ** argv)
     auto on_new_query = [&](const std::string & id,
                             query_proxy::query_sptr q)
     {
+      if( q->has_querycontrol() )
+      {
+        // ignore special queries as they cannot be new
+        return query_proxy::dont_forward;
+      }
+        
       query_data::sptr tmp_query{new query_data{q}};
+      {
+        std::unique_lock<std::mutex> l(query_mtx);
+        queries[id] = tmp_query;
+      }
       
       if( tmp_query->has_cached_data(cache) )
       {
@@ -418,17 +441,13 @@ int main(int argc, char ** argv)
         }
         else
         {
-          std::unique_lock<std::mutex> l(query_mtx);
           column_fwd.subscribe_query(id);
-          queries[id] = tmp_query;
           return query_proxy::forward_query;
         }
       }
       else
       {
-        std::unique_lock<std::mutex> l(query_mtx);
         column_fwd.subscribe_query(id);
-        queries[id] = tmp_query;
         return query_proxy::forward_query;
       }
     };
@@ -437,12 +456,50 @@ int main(int argc, char ** argv)
                                std::set<std::string> & columns,
                                std::set<uint64_t> & blocks)
     {
-      bool ret = true;
-      std::ostringstream os_columns;
-      std::ostringstream os_blocks;
-      for( auto const & c : columns ) { os_columns << c << ' '; }
-      for( auto const & b : blocks )  { os_blocks << b << ' '; }
-      LOG_ERROR("resend chunk is not supported" <<  V_(query_id) << V_(os_columns.str()) << V_(os_blocks.str()));
+      bool ret = false;
+      
+      // query data
+      query_data::sptr qdata;
+      {
+        std::unique_lock<std::mutex> l(query_mtx);
+        qdata = queries[query_id];
+      }
+      
+      if( !qdata )
+      {
+        return ret;
+      }
+      
+      auto const & col_hashes = qdata->col_hashes();
+      
+      for( auto const & c : columns )
+      {
+        auto const & col_hash = col_hashes.find(c);
+        for( auto const & b : blocks )
+        {
+          size_t len = 0;
+          auto data = fetch_column(col_hash->second,
+                                   qdata->start(),
+                                   c,
+                                   query_id,
+                                   b,
+                                   len);
+          
+          if( data )
+          {
+            // LOG_TRACE("re-sending" << V_(query_id) << V_(b) << V_(c));
+            col_proxy_ptr->publish(data);
+          }
+          else
+          {
+            // LOG_TRACE("cannot re-send" << V_(query_id) << V_(b) << V_(c));
+          }
+          
+          // TODO : ???
+          // if( bn == qtl.t0_nblocks()-1 )
+          //  data->set_endofdata(true);
+        }
+      }
       return ret;
     };
     

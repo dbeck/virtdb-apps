@@ -22,6 +22,12 @@ namespace virtdb { namespace simple_cache {
     return start_;
   }
   
+  void
+  query_data::start(const std::chrono::system_clock::time_point & st)
+  {
+    start_ = st;
+  }
+
   const std::string &
   query_data::tab_hash() const
   {
@@ -73,36 +79,49 @@ namespace virtdb { namespace simple_cache {
   {
     using namespace virtdb::cachedb;
     using namespace std::chrono;
+    
+    // skip check for special queries
+    if( query()->has_querycontrol() == true ) return false;
+
+    bool ret = false;
+    int64_t difftime = 0;
+    std::string t0;
+    std::string t1;
+    
     query_table_log qtl;
     qtl.key(tab_hash_);
-    size_t ret = cache.fetch(qtl);
-    if( ret > 0 )
+    size_t res = cache.fetch(qtl);
+    
+    if( res > 0 )
     {
-      std::string t0;
       bool converted = storeable::convert(qtl.t0_completed_at(), t0);
+      storeable::convert(qtl.t1_completed_at(), t1);
       
       auto now = system_clock::now();
-      int64_t difftime = duration_cast<std::chrono::seconds>(now - qtl.t0_completed_at()).count();
-      
-      LOG_INFO(V_(qtl.clazz()) <<
-               V_(query_->queryid()) <<
-               "has" << V_(ret) << "properties" <<
-               V_(qtl.n_columns()) <<
-               V_(qtl.t0_nblocks()) <<
-               V_(t0) <<
-               V_(converted) <<
-               V_(difftime) <<
-               V_(timeout_seconds_) );
+      difftime = duration_cast<std::chrono::seconds>(now - qtl.t0_completed_at()).count();
       
       if( converted &&
          qtl.t0_nblocks() > 0 &&
          qtl.n_columns() > 0 &&
          difftime < timeout_seconds_ )
       {
-        return true;
+        ret = true;
       }        
     }
-    return false;
+    
+    LOG_INFO(V_(qtl.clazz()) <<
+             V_(query_->queryid()) <<
+             V_(query()->schema()) <<
+             V_(query()->table()) <<
+             "has" << V_(res) << "properties" <<
+             V_(qtl.n_columns()) <<
+             V_(qtl.t0_nblocks()) <<
+             V_(t0) << V_(t1) <<
+             V_(ret) << V_(res) <<
+             V_(difftime) <<
+             V_(timeout_seconds_) );
+
+    return ret;
   }
   
   bool
@@ -203,7 +222,7 @@ namespace virtdb { namespace simple_cache {
       }
       if( it->second.size() != ncolumns )
       {
-        LOG_TRACE("block not complete" << V_(seq_no) << V_(i) << V_(it->second.size()));
+        // LOG_TRACE("block not complete" << V_(seq_no) << V_(i) << V_(it->second.size()));
         return false;
       }
     }
