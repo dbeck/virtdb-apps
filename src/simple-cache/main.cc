@@ -108,28 +108,19 @@ int main(int argc, char ** argv)
       // add data templates here, so db can initialized column families
       column_data         template_column_data;
       query_table_block   template_query_table_block;
-      query_table_job     template_query_table_job;
       query_table_log     template_query_table_log;
       query_column_block  template_query_column_block;
-      query_column_job    template_query_column_job;
-      query_column_log    template_query_column_log;
 
       template_column_data.default_columns();
       template_query_table_block.default_columns();
-      template_query_table_job.default_columns();
       template_query_table_log.default_columns();
       template_query_column_block.default_columns();
-      template_query_column_job.default_columns();
-      template_query_column_log.default_columns();
       
       db::storeable_ptr_vec_t column_families {
         &template_column_data,
         &template_query_table_block,
-        &template_query_table_job,
         &template_query_table_log,
         &template_query_column_block,
-        &template_query_column_job,
-        &template_query_column_log
       };
       
       // init db:
@@ -155,12 +146,6 @@ int main(int argc, char ** argv)
                   V_(subscription));
         return;
       }
-      LOG_TRACE("received:" <<
-                V_(data->queryid()) <<
-                V_(data->name()) <<
-                V_(data->ByteSize()) <<
-                V_((int)data->data().type()) <<
-                V_(data->uncompressedsize()));
 
       relative_time rt;
       
@@ -179,18 +164,15 @@ int main(int argc, char ** argv)
       {
         // we already have this column data
         LOG_TRACE("column data is already in the cache" <<
-                  V_(provider_name)   << V_(channel)      << V_(subscription) <<
-                  V_(data->queryid()) << V_(data->name()) <<
-                  V_(dta.key())       << V_(dta.len())    <<
-                 "took" << V_(rt.get_usec()));
+                  V_(provider_name)   << V_(data->queryid()) << V_(data->name()) <<
+                  V_(dta.key())       << V_(dta.len())       << "took" << V_(rt.get_usec()));
         
       }
       else if( !cache.set(dta) )
       {
         // update cache with the data
         LOG_ERROR("failed to update column data" <<
-                  V_(provider_name)   << V_(channel)      << V_(subscription) <<
-                  V_(data->queryid()) << V_(data->name()) <<
+                  V_(provider_name)   << V_(data->queryid()) << V_(data->name()) <<
                   V_(dta.key())       << V_(dta.len())
                   );
         
@@ -202,17 +184,21 @@ int main(int argc, char ** argv)
       else
       {
         LOG_INFO("data stored in the cache" <<
-                 V_(provider_name)   << V_(channel)      << V_(subscription) <<
-                 V_(data->queryid()) << V_(data->name()) <<
-                 V_(dta.key())       << V_(dta.len())    <<
-                 "took" << V_(rt.get_usec()));
+                 V_(provider_name)   << V_(data->queryid()) << V_(data->name()) <<
+                 V_(dta.key())       << V_(dta.len())       << "took" << V_(rt.get_usec()));
       }
       
       const std::string & err_info = qdata->error_info();
       
       if( !err_info.empty() )
       {
-        LOG_TRACE("not storing column admin information because of current error state" << V_(err_info));
+        LOG_TRACE("not storing column admin information because of current error state" <<
+                  V_(data->queryid()) <<
+                  V_(data->name()) <<
+                  V_(data->ByteSize()) <<
+                  V_((int)data->data().type()) <<
+                  V_(data->uncompressedsize()) <<
+                  V_(err_info));
         return;
       }
       
@@ -224,41 +210,40 @@ int main(int argc, char ** argv)
                                     qcb) == false )
       {
         std::ostringstream os;
-        os << "failed to store quer_column_block data for {" << data->queryid() << '/' << data->name() << ':' << data->seqno() << "}";
+        os << "failed to store query_column_block data for {" << data->queryid() << '/' << data->name() << ':' << data->seqno() << "}";
         qdata->error_info(os.str());
         return;
       }
       
-      LOG_TRACE("store_column_block done" <<
-                V_(provider_name)   << V_(channel)      << V_(subscription) <<
-                V_(data->queryid()) << V_(data->name()) <<
-                V_(dta.key())       << V_(dta.len())    <<
-                "took" << V_(rt.get_usec()));
-      
-      
-      query_column_job qcj;
-      if( qdata->update_column_job(cache,
-                                   data->name(),
-                                   data->seqno(),
-                                   data->endofdata(),
-                                   qcj) == false )
+      query_table_block qtb;
+      if( qdata->update_table_block(cache,
+                                    data->name(),
+                                    data->seqno(),
+                                    qtb) == false )
       {
         std::ostringstream os;
-        os << "failed to store quer_column_job data for {" << data->queryid() << '/' << data->name() << ':' << data->seqno() << "}";
+        os << "failed to update query_table_block data for {" << data->queryid() << '/' << data->name() << ':' << data->seqno() << "}";
         qdata->error_info(os.str());
         return;
       }
       
-      LOG_TRACE("store_column_job done" <<
-                V_(provider_name)   << V_(channel)      << V_(subscription) <<
-                V_(data->queryid()) << V_(data->name()) <<
-                V_(dta.key())       << V_(dta.len())    <<
-                V_(qcj.max_block()) << V_(qcj.block_count()) <<
-                "took" << V_(rt.get_usec()));
+      LOG_TRACE("update_table_block done" <<
+                V_(provider_name)   << V_(data->queryid()) << V_(data->name()) <<
+                V_(dta.key())       << V_(dta.len())       << "took" << V_(rt.get_usec()));
       
-      if( data->endofdata() )
+      if( data->endofdata() &&
+          qdata->is_complete(data->seqno()) )
       {
-        query_column_log qcl;
+        query_table_log qtl;
+        if( qdata->update_table_log(cache, qtl) == false)
+        {
+          std::ostringstream os;
+          os << "failed to update query_table_log data for {" << data->queryid() << '/' << data->name() << ':' << data->seqno() << "}";
+          qdata->error_info(os.str());
+          return;
+        }
+        
+        // TODO : qdata expiry
       }
     };
     
@@ -299,8 +284,74 @@ int main(int argc, char ** argv)
     
     auto send_cached_data = [&](query_data::sptr qd)
     {
-      // TODO : gather and send cached data
-      LOG_ERROR("TODO : implement sending cached data" << V_(qd->query()->queryid()));
+      relative_time rt;
+
+      // gather head record: query_table_log
+      query_table_log qtl;
+      qtl.key(qd->tab_hash());
+      size_t res = cache.fetch(qtl);
+      
+      std::string query_id{qd->query()->queryid()};
+      
+      LOG_TRACE("reading cache based on query_table_log" <<
+                V_(query_id) <<
+                V_(qtl.n_columns()) <<
+                V_(qd->tab_hash()) <<
+                V_(res) <<
+                V_(qtl.property_cref(qtl.qn_t0_completed_at)) <<
+                V_(qtl.t0_nblocks()));
+      
+      if( res < 3 ) { LOG_ERROR("TODO"); return; }
+      if( qtl.t0_nblocks() == 0 ) { LOG_ERROR("TODO"); return; }
+      if( qtl.n_columns() != qd->col_hashes().size() ) { LOG_ERROR("TODO"); return; }
+      
+      auto const & col_hashes = qd->col_hashes();
+      
+      size_t total_blocks = 0;
+      size_t total_bytes  = 0;
+      size_t columns      = col_hashes.size();
+      
+      for( size_t bn=0; bn<qtl.t0_nblocks(); ++bn )
+      {
+        
+        for( auto const & ch : col_hashes )
+        {
+          query_column_block qcb;
+          qcb.key(ch.second, qtl.t0_completed_at(), bn);
+          size_t res = cache.fetch(qcb);
+          if( res < 1 ) { LOG_ERROR("TODO"); return; }
+          
+          column_data cd;
+          cd.key(qcb.column_hash());
+          res = cache.fetch(cd);
+          if( res < 1 ) { LOG_ERROR("TODO"); return; }
+          
+          std::shared_ptr<pb::Column> data{new pb::Column};
+          auto parsed = data->ParsePartialFromString(cd.data());
+          if( !parsed ) { LOG_ERROR("TODO"); return; }
+          
+          // align data with query
+          data->set_queryid(qd->query()->queryid());
+          data->set_name(ch.first);
+          data->set_seqno(bn);
+          if( bn == qtl.t0_nblocks()-1 )
+            data->set_endofdata(true);
+
+          col_proxy_ptr->publish(data);
+          
+          ++total_blocks;
+          total_bytes += cd.len();
+        }
+      }
+      
+      double ms = (0.0+rt.get_usec())/1000.0;
+      
+      LOG_INFO("cache returned" <<
+               V_(query_id) <<
+               V_(total_blocks) <<
+               V_(total_bytes) <<
+               V_(columns) <<
+               "took" << V_(ms));
     };
     
     active_queue<query_data::sptr,1000> cached_data_sender{ 1, send_cached_data };
@@ -308,7 +359,6 @@ int main(int argc, char ** argv)
     auto on_new_query = [&](const std::string & id,
                             query_proxy::query_sptr q)
     {
-      column_fwd.subscribe_query(id);
       query_data::sptr tmp_query{new query_data{q}};
       
       if( tmp_query->has_cached_data(cache) )
@@ -319,6 +369,7 @@ int main(int argc, char ** argv)
       else
       {
         std::unique_lock<std::mutex> l(query_mtx);
+        column_fwd.subscribe_query(id);
         queries[id] = tmp_query;
         return query_proxy::forward_query;
       }

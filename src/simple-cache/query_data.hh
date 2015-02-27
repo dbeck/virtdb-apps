@@ -4,10 +4,7 @@
 #include <cachedb/hash_util.hh>
 #include <cachedb/db.hh>
 #include <cachedb/query_column_block.hh>
-#include <cachedb/query_column_job.hh>
-#include <cachedb/query_column_log.hh>
 #include <cachedb/query_table_block.hh>
-#include <cachedb/query_table_job.hh>
 #include <cachedb/query_table_log.hh>
 
 #include <memory>
@@ -44,7 +41,7 @@ namespace virtdb { namespace simple_cache {
     void error_info(const std::string & err);
     
     query_data(dsproxy::query_proxy::query_sptr q,
-               int64_t cache_timeout_seconds=60);
+               int64_t cache_timeout_seconds=86400);
     
     
     bool
@@ -64,18 +61,12 @@ namespace virtdb { namespace simple_cache {
                        cachedb::query_table_block & qtb);
     
     bool
-    update_column_job(cachedb::db & cache,
-                      const std::string & colname,
-                      size_t seq_no,
-                      bool last,
-                      cachedb::query_column_job & qcj);
-
-    bool
-    update_column_log(cachedb::db & cache,
-                      const std::string & colname,
-                      const cachedb::query_column_job & qcj,
-                      cachedb::query_column_log & qcl);
+    is_complete(size_t seq_no);
     
+    bool
+    update_table_log(cachedb::db & cache,
+                     cachedb::query_table_log & qtl);
+        
     virtual ~query_data();
   };
 

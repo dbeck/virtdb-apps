@@ -95,7 +95,7 @@ namespace virtdb { namespace simple_cache {
          difftime < timeout_seconds_ )
       {
         return true;
-      }
+      }        
     }
     return false;
   }
@@ -107,7 +107,8 @@ namespace virtdb { namespace simple_cache {
                                  size_t seq_no,
                                  cachedb::query_column_block & qcb)
   {
-    qcb.key(this->col_hash(colname), start_, seq_no);
+    const std::string & colhash = this->col_hash(colname);
+    qcb.key(colhash, start_, seq_no);
     qcb.column_hash(column_hash);
     size_t res = cache.set(qcb);
     if( res != 1 )
@@ -124,6 +125,13 @@ namespace virtdb { namespace simple_cache {
     }
     else
     {
+      auto it = complete_map_.find(seq_no);
+      if( it == complete_map_.end() )
+      {
+        auto rit = complete_map_.insert(std::make_pair(seq_no, colhash_set_t()));
+        it = rit.first;
+      }
+      it->second.insert(colhash);
       return true;
     }
   }
@@ -156,59 +164,45 @@ namespace virtdb { namespace simple_cache {
   }
   
   bool
-  query_data::update_column_job(cachedb::db & cache,
-                                const std::string & colname,
-                                size_t seq_no,
-                                bool last,
-                                cachedb::query_column_job & qcj)
+  query_data::update_table_log(cachedb::db & cache,
+                               cachedb::query_table_log & qtl)
   {
-    qcj.key(this->col_hash(colname), start_);
-    size_t res = cache.fetch(qcj);
-    if( qcj.is_complete() )
-    {
-      LOG_ERROR("unexpected state" <<
-                V_(qcj.clazz()) <<
-                V_(query()->queryid()) <<
-                V_(query()->schema()) <<
-                V_(query()->table()) <<
-                V_(colname) <<
-                V_(seq_no) <<
-                V_(last) <<
-                V_(qcj.is_complete()) <<
-                V_(qcj.max_block()) <<
-                V_(qcj.block_count()) <<
-                V_(res));
-      return false;
-    }
+    qtl.key(tab_hash_);
+    qtl.n_columns(col_hashes_.size());
+    size_t res = cache.fetch(qtl);
     
-    // set properties and update database
-    qcj.is_complete(last);
-    if( qcj.max_block() < seq_no ) qcj.max_block(seq_no);
-    qcj.block_count(qcj.block_count()+1);
-    res = cache.set(qcj);
-    return (res >= 3); // at least the number of columns
+    // make the previous entry obsolete
+    qtl.t1_completed_at(qtl.t0_completed_at());
+    qtl.t1_nblocks(qtl.t0_nblocks());
+    
+    // update the current entry
+    qtl.t0_completed_at(start_);
+    qtl.t0_nblocks(complete_map_.size());
+    
+    // update database
+    res = cache.set(qtl);
+    return (res >= 5);
   }
   
   bool
-  query_data::update_column_log(cachedb::db & cache,
-                                const std::string & colname,
-                                const cachedb::query_column_job & qcj,
-                                cachedb::query_column_log & qcl)
+  query_data::is_complete(size_t seq_no)
   {
-    qcl.key(this->col_hash(colname));
-    size_t res = cache.fetch(qcl);
-    
-    // make the previous entry obsolete
-    qcl.t1_completed_at(qcl.t0_completed_at());
-    qcl.t1_nblocks(qcl.t0_nblocks());
-    
-    // update the current entry
-    qcl.t0_completed_at(start_);
-    qcl.t0_nblocks(qcj.block_count());
-    
-    // update database
-    res = cache.set(qcl);
-    return (res >= 4);
+    size_t ncolumns = this->col_hashes_.size();
+    for( size_t i=0; i<=seq_no; ++i )
+    {
+      auto it = complete_map_.find(i);
+      if( it == complete_map_.end() )
+      {
+        LOG_TRACE("not complete" << V_(seq_no) << V_(i) << "not found");
+        return false;
+      }
+      if( it->second.size() != ncolumns )
+      {
+        LOG_TRACE("block not complete" << V_(seq_no) << V_(i) << V_(it->second.size()));
+        return false;
+      }
+    }
+    return true;
   }
   
   query_data::~query_data()
