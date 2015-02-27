@@ -160,15 +160,8 @@ int main(int argc, char ** argv)
         qdata = queries[data->queryid()];
       }
       
-      if( cache.exists(dta) )
-      {
-        // we already have this column data
-        LOG_TRACE("column data is already in the cache" <<
-                  V_(provider_name)   << V_(data->queryid()) << V_(data->name()) <<
-                  V_(dta.key())       << V_(dta.len())       << "took" << V_(rt.get_usec()));
-        
-      }
-      else if( !cache.set(dta) )
+      // TODO : check and debug, do we need to store the data every time???
+      if( !cache.set(dta) )
       {
         // update cache with the data
         LOG_ERROR("failed to update column data" <<
@@ -180,12 +173,6 @@ int main(int argc, char ** argv)
         os << "failed to store column data for {" << data->queryid() << '/' << data->name() << ':' << data->seqno() << "}";
         qdata->error_info(os.str());
         return;
-      }
-      else
-      {
-        LOG_INFO("data stored in the cache" <<
-                 V_(provider_name)   << V_(data->queryid()) << V_(data->name()) <<
-                 V_(dta.key())       << V_(dta.len())       << "took" << V_(rt.get_usec()));
       }
       
       const std::string & err_info = qdata->error_info();
