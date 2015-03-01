@@ -147,7 +147,7 @@ int main(int argc, char ** argv)
         return;
       }
 
-      // relative_time rt;
+      relative_time rt;
       
       // convert column data to be storeable
       column_data dta;
@@ -194,11 +194,13 @@ int main(int argc, char ** argv)
                                     data->name(),
                                     dta.key(),
                                     data->seqno(),
+                                    data->endofdata(),
                                     qcb) == false )
       {
         std::ostringstream os;
         os << "failed to store query_column_block data for {" << data->queryid() << '/' << data->name() << ':' << data->seqno() << "}";
         qdata->error_info(os.str());
+        LOG_ERROR(V_(os.str()));
         return;
       }
       
@@ -211,14 +213,23 @@ int main(int argc, char ** argv)
         std::ostringstream os;
         os << "failed to update query_table_block data for {" << data->queryid() << '/' << data->name() << ':' << data->seqno() << "}";
         qdata->error_info(os.str());
+        LOG_ERROR(V_(os.str()));
         return;
       }
       
-      /*LOG_TRACE("update_table_block done" <<
+      LOG_TRACE("update_table_block done" <<
                 V_(provider_name)   << V_(data->queryid()) << V_(data->name()) <<
-                V_(dta.key())       << V_(dta.len())       << "took" << V_(rt.get_usec())); */
+                V_(dta.key())       << V_(dta.len())       << "took" << V_(rt.get_usec()) <<
+                V_(qcb.key()) <<
+                V_(qtb.key()) <<
+                V_(data->seqno()) <<
+                V_(data->endofdata()) <<
+                V_(qdata->block_count()) <<
+                V_(qdata->complete_count()) <<
+                V_(qdata->max_block()) <<
+                V_(qdata->missing()));
       
-      if( data->endofdata() &&
+      if( qdata->end_of_data(data->endofdata()) &&
           qdata->is_complete(data->seqno()) )
       {
         query_table_log qtl;
@@ -231,7 +242,7 @@ int main(int argc, char ** argv)
         }
         
         // TODO : query data expiry
-        LOG_INFO("successfully cache table" <<
+        LOG_INFO("successfully cache table" << V_(qtl.key()) <<
                  V_(provider_name)   << V_(data->queryid()) << V_(data->name()) <<
                  V_(dta.key())       << V_(dta.len()) );//      << "took" << V_(rt.get_usec()));
       }
@@ -283,11 +294,12 @@ int main(int argc, char ** argv)
       query_column_block qcb;
       qcb.key(column_hash, tp, seq_no);
       size_t res = cache.fetch(qcb);
-      if( res < 1 )
+      if( res < 2 )
       {
-        /* LOG_ERROR("failed to fetch query_column_block" <<
+        LOG_ERROR("failed to fetch query_column_block" <<
                   V_(query_id) << V_(name) <<
-                  V_(res) << V_(seq_no)); */
+                  V_(qcb.key()) <<
+                  V_(res) << V_(seq_no));
         return data;
       }
       
@@ -296,9 +308,9 @@ int main(int argc, char ** argv)
       res = cache.fetch(cd);
       if( res < 1 )
       {
-        /* LOG_ERROR("failed to fetch column_data" <<
+        LOG_ERROR("failed to fetch column_data" <<
                   V_(query_id) << V_(name) <<
-                  V_(res) << V_(seq_no) << V_(cd.key())); */
+                  V_(res) << V_(seq_no) << V_(cd.key()));
         return data;
       }
       len = cd.len();
@@ -307,9 +319,9 @@ int main(int argc, char ** argv)
       auto parsed = data->ParsePartialFromString(cd.data());
       if( !parsed )
       {
-        /* LOG_ERROR("failed to parse column_data" <<
+        LOG_ERROR("failed to parse column_data" <<
                   V_(query_id) << V_(name) <<
-                  V_(res) << V_(cd.len()) << V_(cd.key())); */
+                  V_(res) << V_(cd.len()) << V_(cd.key()));
         data.reset();
         return data;
       }
@@ -318,12 +330,14 @@ int main(int argc, char ** argv)
       data->set_queryid(query_id);
       data->set_name(name);
       data->set_seqno(seq_no);
+      data->set_endofdata(qcb.end_of_data());
       return data;
     };
     
     auto send_cached_data = [&](query_data::sptr qd)
     {
       relative_time rt;
+      qd->init_test(); // TODO
 
       // gather head record: query_table_log
       query_table_log qtl;
@@ -389,10 +403,21 @@ int main(int argc, char ** argv)
                                    query_id,
                                    bn,
                                    len);
-          if( bn == qtl.t0_nblocks()-1 )
-            data->set_endofdata(true);
 
+          if( !len || !data )
+          {
+            LOG_ERROR("invalid column" <<
+                      V_(query_id) <<
+                      V_(schema) <<
+                      V_(table) <<
+                      V_(ch.first) <<
+                      V_(ch.second) <<
+                      V_(bn));
+            return false;
+          }
+          
           col_proxy_ptr->publish(data);
+          qd->test_add_col(data); // TODO
           
           ++total_blocks;
           total_bytes += len;
@@ -412,7 +437,11 @@ int main(int argc, char ** argv)
       
       // set start point so we can support resend queries too
       qd->start(qtl.t0_completed_at());
-      return true;
+      
+      std::cout << "collect and publish took " << ms << "ms\n";
+      qd->decompress_test();
+      
+      return false; // TODO
     };
     
     // active_queue<query_data::sptr,1000> cached_data_sender{ 1, send_cached_data };
@@ -467,6 +496,7 @@ int main(int argc, char ** argv)
       
       if( !qdata )
       {
+        LOG_ERROR("unknown" << V_(query_id) << "cannot resend");
         return ret;
       }
       
@@ -487,17 +517,13 @@ int main(int argc, char ** argv)
           
           if( data )
           {
-            // LOG_TRACE("re-sending" << V_(query_id) << V_(b) << V_(c));
+            LOG_TRACE("re-sending" << V_(query_id) << V_(b) << V_(c) << V_(len) << V_(col_hash->second));
             col_proxy_ptr->publish(data);
           }
           else
           {
-            // LOG_TRACE("cannot re-send" << V_(query_id) << V_(b) << V_(c));
-          }
-          
-          // TODO : ???
-          // if( bn == qtl.t0_nblocks()-1 )
-          //  data->set_endofdata(true);
+            LOG_TRACE("cannot re-send" << V_(query_id) << V_(b) << V_(c) << V_(col_hash->second) );
+          }          
         }
       }
       return ret;

@@ -12,6 +12,9 @@
 #include <map>
 #include <set>
 
+// test related
+#include <util/table_collector.hh>
+
 namespace virtdb { namespace simple_cache {
   
   class query_data
@@ -26,6 +29,7 @@ namespace virtdb { namespace simple_cache {
     int64_t                                   timeout_seconds_;
     std::string                               error_info_;
     block_hash_set_t                          complete_map_;
+    bool                                      end_of_data_;
     
   public:
     typedef std::shared_ptr<query_data> sptr;
@@ -40,7 +44,12 @@ namespace virtdb { namespace simple_cache {
     
     void start(const std::chrono::system_clock::time_point & st);
     std::chrono::system_clock::time_point start() const;
-
+    
+    size_t block_count() const;
+    size_t complete_count() const;
+    size_t max_block() const;
+    std::string missing() const;
+    bool end_of_data(bool value);
     
     query_data(dsproxy::query_proxy::query_sptr q,
                int64_t cache_timeout_seconds=86400);
@@ -54,6 +63,7 @@ namespace virtdb { namespace simple_cache {
                        const std::string & colname,
                        const std::string & column_hash,
                        size_t seq_no,
+                       bool end_of_data,
                        cachedb::query_column_block & qcb);
 
     bool
@@ -68,8 +78,21 @@ namespace virtdb { namespace simple_cache {
     bool
     update_table_log(cachedb::db & cache,
                      cachedb::query_table_log & qtl);
-        
+    
     virtual ~query_data();
+    
+    void init_test();
+    void test_add_col(std::shared_ptr<interface::pb::Column> dta);
+    void decompress_test();
+    
+  private:
+    typedef util::table_collector<interface::pb::Column> collector_t;
+    typedef typename collector_t::sptr                   collector_sptr_t;
+    typedef std::map<std::string, size_t>                column_idx_map_t;
+    
+    collector_sptr_t collector_sptr_;
+    column_idx_map_t column_idxs_;
+
   };
 
 }}
