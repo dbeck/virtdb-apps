@@ -337,7 +337,6 @@ int main(int argc, char ** argv)
     auto send_cached_data = [&](query_data::sptr qd)
     {
       relative_time rt;
-      qd->init_test(); // TODO
 
       // gather head record: query_table_log
       query_table_log qtl;
@@ -417,7 +416,6 @@ int main(int argc, char ** argv)
           }
           
           col_proxy_ptr->publish(data);
-          qd->test_add_col(data); // TODO
           
           ++total_blocks;
           total_bytes += len;
@@ -439,9 +437,7 @@ int main(int argc, char ** argv)
       qd->start(qtl.t0_completed_at());
       
       std::cout << "collect and publish took " << ms << "ms\n";
-      qd->decompress_test();
-      
-      return false; // TODO
+      return true;
     };
     
     // active_queue<query_data::sptr,1000> cached_data_sender{ 1, send_cached_data };

@@ -79,20 +79,7 @@ namespace virtdb { namespace simple_cache {
     update_table_log(cachedb::db & cache,
                      cachedb::query_table_log & qtl);
     
-    virtual ~query_data();
-    
-    void init_test();
-    void test_add_col(std::shared_ptr<interface::pb::Column> dta);
-    void decompress_test();
-    
-  private:
-    typedef util::table_collector<interface::pb::Column> collector_t;
-    typedef typename collector_t::sptr                   collector_sptr_t;
-    typedef std::map<std::string, size_t>                column_idx_map_t;
-    
-    collector_sptr_t collector_sptr_;
-    column_idx_map_t column_idxs_;
-
+    virtual ~query_data();    
   };
 
 }}
