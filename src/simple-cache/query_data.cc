@@ -168,6 +168,7 @@ namespace virtdb { namespace simple_cache {
     LOG_INFO(V_(qtl.clazz()) <<
              V_(qtl.key()) <<
              V_(query_->queryid()) <<
+             V_(query_->filter_size()) <<
              V_(query()->schema()) <<
              V_(query()->table()) <<
              "has" << V_(res) << "properties" <<
