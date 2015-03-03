@@ -242,9 +242,9 @@ int main(int argc, char ** argv)
         }
         
         // TODO : query data expiry
-        LOG_INFO("successfully cache table" << V_(qtl.key()) <<
+        /* LOG_INFO("successfully cache table" << V_(qtl.key()) <<
                  V_(provider_name)   << V_(data->queryid()) << V_(data->name()) <<
-                 V_(dta.key())       << V_(dta.len()) );//      << "took" << V_(rt.get_usec()));
+                 V_(dta.key())       << V_(dta.len()) );//      << "took" << V_(rt.get_usec())); */
       }
     };
     
