@@ -434,9 +434,7 @@ int main(int argc, char ** argv)
                "took" << V_(ms));
       
       // set start point so we can support resend queries too
-      qd->start(qtl.t0_completed_at());
-      
-      std::cout << "collect and publish took " << ms << "ms\n";
+      qd->start(qtl.t0_completed_at());      
       return true;
     };
     
