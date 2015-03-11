@@ -282,7 +282,7 @@ int main(int argc, char ** argv)
         }
       }
       return value;
-    }
+    };
     
     auto reconfigure = [&](const pb::Config & cfg) {
       std::unique_lock<std::mutex> l(config_mtx);
