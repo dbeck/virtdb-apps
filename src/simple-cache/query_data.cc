@@ -200,8 +200,9 @@ namespace virtdb { namespace simple_cache {
              V_(qtl.t0_nblocks()) <<
              V_(t0) << V_(t1) <<
              V_(ret) << V_(res) <<
-             V_(difftime) <<
-             V_(timeout_seconds_) );
+             V_((int)difftime) <<
+             V_(timeout_seconds_.load())
+             );
 
     return ret;
   }

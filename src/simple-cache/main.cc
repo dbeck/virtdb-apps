@@ -268,17 +268,19 @@ int main(int argc, char ** argv)
                             const std::string & name)
     {
       std::string value;
-      if( new_params.count(name) > 0 &&
-          new_params[name].size() > 0 )
+      auto itn = new_params.find(name);
+      
+      if( itn != new_params.end() && !itn->second.empty() )
       {
-        if( old_params.count(name) == new_params.count(name) &&
-            old_params[name] != new_params[name] )
+        auto ito = old_params.find(name);
+        
+        if( ito != old_params.end() && ito->second != itn->second )
         {
-          value = new_params[name];
+          value = itn->second;
         }
         else if( old_params.count(name) <= new_params.count(name) )
         {
-          value = new_params[name];
+          value = itn->second;
         }
       }
       return value;
