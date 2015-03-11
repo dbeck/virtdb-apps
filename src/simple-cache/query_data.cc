@@ -138,6 +138,18 @@ namespace virtdb { namespace simple_cache {
     
     // skip check for special queries
     if( query()->has_querycontrol() == true ) return false;
+    
+    // skip check for invalid queries
+    if( tab_hash_.find("ERROR") != std::string::npos )
+    {
+      LOG_ERROR("skip cache check for invalid queries" <<
+                V_(query_->queryid()) <<
+                V_(query_->filter_size()) <<
+                V_(query_->schema()) <<
+                V_(query_->table()) <<
+                V_(query_->fields_size()));
+      return false;
+    }
 
     bool ret = false;
     int64_t difftime = 0;
@@ -169,8 +181,8 @@ namespace virtdb { namespace simple_cache {
              V_(qtl.key()) <<
              V_(query_->queryid()) <<
              V_(query_->filter_size()) <<
-             V_(query()->schema()) <<
-             V_(query()->table()) <<
+             V_(query_->schema()) <<
+             V_(query_->table()) <<
              "has" << V_(res) << "properties" <<
              V_(qtl.n_columns()) <<
              V_(qtl.t0_nblocks()) <<

@@ -103,7 +103,11 @@ int main(int argc, char ** argv)
     column_proxy *  col_proxy_ptr = nullptr;
     db              cache;
     
-    // gather column family info
+    std::string cache_location{"/tmp/simple-cache-"};
+    cache_location += service_name;
+    
+    // initialize cache
+    auto init_cache = [](db & cache, const std::string & location)
     {
       // add data templates here, so db can initialized column families
       column_data         template_column_data;
@@ -124,11 +128,13 @@ int main(int argc, char ** argv)
       };
       
       // init db:
-      if( !cache.init("/tmp/simple-cache-data", column_families) )
+      if( !cache.init(location, column_families) )
       {
         LOG_ERROR("failed to initialze cacche");
       }
-    }
+    };
+    
+    init_cache(cache, cache_location);
     
     std::mutex                               query_mtx;
     std::map<std::string, query_data::sptr>  queries;
@@ -601,7 +607,11 @@ int main(int argc, char ** argv)
             cfg_data = cfg_req.add_configdata();
         }
         cfg_data->set_key("");
-        std::vector<std::string> requested_config_values{ "Data Provider", };
+        std::vector<std::string> requested_config_values{
+          "Data Provider",
+          "Cache Location",
+          "Expiry",
+        };
         
         for( auto const & v : requested_config_values )
         {
