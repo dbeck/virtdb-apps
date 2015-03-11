@@ -267,7 +267,7 @@ int main(int argc, char ** argv)
                             const string_map & new_params,
                             const std::string & name)
     {
-      std::strint value;
+      std::string value;
       if( new_params.count(name) > 0 &&
           new_params[name].size() > 0 )
       {
