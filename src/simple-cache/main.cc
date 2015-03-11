@@ -165,7 +165,6 @@ int main(int argc, char ** argv)
       {
         std::unique_lock<std::mutex> l(query_mtx);
         qdata = queries[data->queryid()];
-        if( qdata->e)
       }
       
       // TODO : check and debug, do we need to store the data every time???
