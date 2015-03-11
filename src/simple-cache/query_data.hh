@@ -11,6 +11,7 @@
 #include <chrono>
 #include <map>
 #include <set>
+#include <atomic>
 
 // test related
 #include <util/table_collector.hh>
@@ -26,7 +27,7 @@ namespace virtdb { namespace simple_cache {
     std::chrono::system_clock::time_point     start_;
     std::string                               tab_hash_;
     cachedb::hash_util::colhash_map           col_hashes_;
-    int64_t                                   timeout_seconds_;
+    std::atomic<int64_t>                      timeout_seconds_;
     std::string                               error_info_;
     block_hash_set_t                          complete_map_;
     bool                                      end_of_data_;
@@ -50,9 +51,11 @@ namespace virtdb { namespace simple_cache {
     size_t max_block() const;
     std::string missing() const;
     bool end_of_data(bool value);
+    void timeout(int64_t ms);
+    int64_t timeout() const;
     
     query_data(dsproxy::query_proxy::query_sptr q,
-               int64_t cache_timeout_seconds=86400);
+               int64_t cache_timeout_seconds);
     
     
     bool

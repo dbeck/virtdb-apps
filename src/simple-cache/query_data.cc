@@ -73,6 +73,18 @@ namespace virtdb { namespace simple_cache {
     return end_of_data_;
   }
   
+  void
+  query_data::timeout(int64_t ms)
+  {
+    timeout_seconds_ = ms;
+  }
+  
+  int64_t
+  query_data::timeout() const
+  {
+    return timeout_seconds_;
+  }
+  
   size_t
   query_data::max_block() const
   {

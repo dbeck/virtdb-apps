@@ -138,6 +138,7 @@ int main(int argc, char ** argv)
     
     std::mutex                               query_mtx;
     std::map<std::string, query_data::sptr>  queries;
+    std::atomic<int64_t>                     query_expiry{86400}; // defaults to 1 day
     
     auto on_data_handler = [&](const std::string & provider_name,
                                const std::string & channel,
@@ -164,6 +165,7 @@ int main(int argc, char ** argv)
       {
         std::unique_lock<std::mutex> l(query_mtx);
         qdata = queries[data->queryid()];
+        if( qdata->e)
       }
       
       // TODO : check and debug, do we need to store the data every time???
@@ -262,17 +264,42 @@ int main(int argc, char ** argv)
     string_map config_parameters;
     pb::Config cfg_req;
     
+    auto changed_param = [](const string_map & old_params,
+                            const string_map & new_params,
+                            const std::string & name)
+    {
+      std::strint value;
+      if( new_params.count(name) > 0 &&
+          new_params[name].size() > 0 )
+      {
+        if( old_params.count(name) == new_params.count(name) &&
+            old_params[name] != new_params[name] )
+        {
+          value = new_params[name];
+        }
+        else if( old_params.count(name) <= new_params.count(name) )
+        {
+          value = new_params[name];
+        }
+      }
+      return value;
+    }
+    
     auto reconfigure = [&](const pb::Config & cfg) {
       std::unique_lock<std::mutex> l(config_mtx);
+      string_map old_parameters{config_parameters};
+      
       for( auto const & cf : cfg.configdata() )
       {
         convert_config("",
                        cf,
                        config_parameters);
       }
-      if( config_parameters.count("user_config/Data Provider/") )
+      auto data_provider = changed_param(old_parameters,
+                                         config_parameters,
+                                         "user_config/Data Provider/");
+      if( !data_provider.empty() )
       {
-        std::string data_provider{config_parameters["user_config/Data Provider/"]};
         LOG_TRACE("configure using" << V_(data_provider));
         if( query_fwd.reconnect(data_provider) )
         {
@@ -285,6 +312,29 @@ int main(int argc, char ** argv)
         if( column_fwd.reconnect(data_provider) )
         {
           LOG_INFO("column proxy connected to" << V_(data_provider));
+        }
+      }
+      
+      auto location = changed_param(old_parameters,
+                                    config_parameters,
+                                    "user_config/Cache Location/");
+      
+      if( !location.empty() )
+      {
+        init_cache(cache, location);
+        LOG_INFO("cache location changed to" << V_(location));
+      }
+      
+      auto expiry = changed_param(old_parameters,
+                                  config_parameters,
+                                  "user_config/Expiry/");
+      if( !expiry.empty() )
+      {
+        int64_t tmp = std::atoll(expiry.c_str());
+        if( tmp > 0 )
+        {
+          query_expiry = tmp;
+          LOG_INFO("expiry changed to" << V_(query_expiry.load()));
         }
       }
     };
@@ -444,8 +494,6 @@ int main(int argc, char ** argv)
       return true;
     };
     
-    // active_queue<query_data::sptr,1000> cached_data_sender{ 1, send_cached_data };
-    
     auto on_new_query = [&](const std::string & id,
                             query_proxy::query_sptr q)
     {
@@ -455,7 +503,7 @@ int main(int argc, char ** argv)
         return query_proxy::dont_forward;
       }
         
-      query_data::sptr tmp_query{new query_data{q}};
+      query_data::sptr tmp_query{new query_data{q, query_expiry.load()}};
       {
         std::unique_lock<std::mutex> l(query_mtx);
         queries[id] = tmp_query;
