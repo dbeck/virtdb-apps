@@ -39,9 +39,14 @@ int main(int argc, char ** argv)
     config_client       cfg_clnt(ep_clnt, "config-service");
     config_server       cfg_srv(cfg_clnt, ep_srv);
     
+    ep_srv.reload_from("/tmp");
+    cfg_srv.reload_from("/tmp");
+    
     while( true )
     {
       std::this_thread::sleep_for(std::chrono::seconds(60));
+      ep_srv.save_to("/tmp");
+      cfg_srv.save_to("/tmp");
       LOG_TRACE("alive");
     }
   }

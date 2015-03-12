@@ -119,12 +119,6 @@
       'sources':           [ 'src/save-endpoints/main.cc', ],
     },
     {
-      'target_name':       'load-endpoint',
-      'type':              'executable',
-      'dependencies':      [ 'src/common/common.gyp:common', ],
-      'sources':           [ 'src/load-endpoint/main.cc', ],
-    },
-    {
       'target_name':       'simple-cache',
       'type':              'executable',
       'dependencies':      [
@@ -137,6 +131,18 @@
                              'src/simple-cache/query_data.cc',
                              'src/simple-cache/query_data.hh',
                            ],
+    },
+    {
+      'target_name':       'load-endpoint',
+      'type':              'executable',
+      'dependencies':      [ 'src/common/common.gyp:common', ],
+      'sources':           [ 'src/load-endpoint/main.cc', ],
+    },
+    {
+      'target_name':       'dump-table',
+      'type':              'executable',
+      'dependencies':      [ 'src/common/common.gyp:common', ],
+      'sources':           [ 'src/load-endpoint/main.cc', ],
     },
   ],
 }
