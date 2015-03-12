@@ -539,7 +539,7 @@ int main(int argc, char ** argv)
 #if LOG_TRACE_IS_ENABLED
       {
         std::ostringstream resend;
-        for( auto const & c : coluumns )
+        for( auto const & c : columns )
         {
           resend << c << '[';
           for( auto const & b : blocks )
