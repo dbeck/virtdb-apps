@@ -20,7 +20,7 @@ using namespace virtdb::connector;
 using namespace virtdb::interface;
 using namespace virtdb::engine;
 
-// #define NOPRINT
+#define NOPRINT
 
 namespace
 {
