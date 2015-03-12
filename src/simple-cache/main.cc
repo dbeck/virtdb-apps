@@ -536,6 +536,22 @@ int main(int argc, char ** argv)
     {
       bool ret = false;
       
+#if LOG_TRACE_IS_ENABLED
+      {
+        std::ostringstream resend;
+        for( auto const & c : coluumns )
+        {
+          resend << c << '[';
+          for( auto const & b : blocks )
+          {
+            resend << b << ' ';
+          }
+          resend << ']';
+        }
+        LOG_TRACE("resending" << V_(query_id) << V_(resend.str()));
+      }
+#endif // LOG_TRACE_IS_ENABLED
+      
       // query data
       query_data::sptr qdata;
       {

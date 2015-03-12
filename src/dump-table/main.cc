@@ -1,3 +1,8 @@
+#ifdef RELEASE
+#define LOG_TRACE_IS_ENABLED false
+#define LOG_SCOPED_IS_ENABLED false
+#endif //RELEASE
+
 #include <logger.hh>
 #include <util/exception.hh>
 #include <engine/collector.hh>
@@ -14,6 +19,8 @@ using namespace virtdb::util;
 using namespace virtdb::connector;
 using namespace virtdb::interface;
 using namespace virtdb::engine;
+
+#define NOPRINT
 
 namespace
 {
@@ -122,8 +129,6 @@ int main(int argc, char ** argv)
       THROW_("failed to gather meta_data");
     }
 
-    std::string query_id{table+"dump"+std::to_string(relative_time::instance().get_usec())};
-    collector::sptr coll{new collector(table_meta.fields_size())};
     std::map<std::string, size_t> column_map;
     
     size_t i=0;
@@ -132,6 +137,47 @@ int main(int argc, char ** argv)
       column_map[fl.name()] = i;
       ++i;
     }
+
+    std::srand((unsigned int)relative_time::instance().get_usec()+time(nullptr));
+    std::string query_id{table+"dump"+std::to_string(std::rand())};
+    pb::Query query;
+    auto resend_function = [&](size_t block_id,
+                               const collector::col_vec & cols)
+    {
+      pb::Query resend_query;
+      resend_query.set_queryid(query.queryid());
+      resend_query.set_table(query.table());
+      resend_query.set_querycontrol(pb::Query_Command::Query_Command_RESEND_CHUNK);
+      resend_query.add_seqnos(block_id);
+      for( auto const & c : cols )
+      {
+        auto * f = resend_query.add_fields();
+        f->set_name(table_meta.fields(c).name());
+        auto * desc = f->mutable_desc();
+        desc->set_type(table_meta.fields(c).desc().type());
+      }
+      if( !schema.empty() )
+        resend_query.set_schema(schema);
+
+#if LOG_TRACE_IS_ENABLED
+      {
+        std::ostringstream os;
+        for( auto const & c : cols )
+        {
+          auto fl = table_meta.fields(c);
+          os << c << ':' << fl.name() << ' ';
+        }
+        LOG_TRACE("doing resend" << V_(query.table()) << V_(os.str()) << M_(resend_query));
+      }
+#endif // LOG_TRACE_IS_ENABLED
+      
+      // send the query here
+      if( !q_cli.send_request(resend_query) )
+      {
+        LOG_ERROR("failed to re-send query to data source" << V_(data_source) << V_(config_svc) << M_(resend_query));
+      }
+    };
+    collector::sptr coll{new collector(table_meta.fields_size(), resend_function)};
 
     col_cli.watch(query_id,
                   [&,query_id](const std::string & provider_name,
@@ -143,25 +189,30 @@ int main(int argc, char ** argv)
                     if( !column->has_name() ) return;
                     if( !column_map.count(column->name()) ) return;
                     coll->push(column->seqno(), column_map[column->name()], column);
-                    /*
-                    std::cout << column->seqno() << ":" << column_map[column->name()]
-                              << ": " << coll->n_process_done()
-                              << " / " << coll->n_received()
-                              << "\n";
-                     */
+                    /* */
+                    LOG_TRACE(V_(column->seqno()) <<
+                              V_(column->name()) <<
+                              V_(column_map[column->name()]) <<
+                              V_(coll->n_process_started()) <<
+                              V_(coll->n_process_done()) <<
+                              V_(coll->n_process_succeed()) <<
+                              V_(coll->n_queued()) <<
+                              V_(coll->n_received()));
+                     /**/
                   });
 
     feeder fdr{coll};
     
     // prepare and send query. the data receivers are all set now, need to setup the query
-    pb::Query query;
     {
       query.set_queryid(query_id);
       query.set_table(table);
       for( auto const fl : table_meta.fields() )
       {
-        auto * qfl = query.add_fields();
-        qfl->MergeFrom(fl);
+        auto * f = query.add_fields();
+        f->set_name(fl.name());
+        auto * desc = f->mutable_desc();
+        desc->set_type(fl.desc().type());
       }
       if( !schema.empty() )
         query.set_schema(schema);
@@ -185,6 +236,7 @@ int main(int argc, char ** argv)
       std::cout << fl.name() << sep;
     }
     
+    size_t n_rows = 0;
     std::cout << "\n";
     
     while( true )
@@ -216,7 +268,9 @@ int main(int argc, char ** argv)
             r = fdr.read_int32((size_t)i, v, null);
             if( r == value_type_reader::ok_ && !null )
             {
+#ifndef NOPRINT
               if( !null ) std::cout << v;
+#endif // NOPRINT
             }
             break;
           }
@@ -226,7 +280,9 @@ int main(int argc, char ** argv)
             r = fdr.read_int64((size_t)i, v, null);
             if( r == value_type_reader::ok_ && !null )
             {
+#ifndef NOPRINT
               if( !null ) std::cout << v;
+#endif // NOPRINT
             }
             break;
           }
@@ -236,7 +292,9 @@ int main(int argc, char ** argv)
             r = fdr.read_uint32((size_t)i, v, null);
             if( r == value_type_reader::ok_ && !null )
             {
+#ifndef NOPRINT
               if( !null ) std::cout << v;
+#endif // NOPRINT
             }
             break;
           }
@@ -246,7 +304,9 @@ int main(int argc, char ** argv)
             r = fdr.read_uint64((size_t)i, v, null);
             if( r == value_type_reader::ok_ && !null )
             {
+#ifndef NOPRINT
               if( !null ) std::cout << v;
+#endif // NOPRINT
             }
             break;
           }
@@ -256,7 +316,9 @@ int main(int argc, char ** argv)
             r = fdr.read_double((size_t)i, v, null);
             if( r == value_type_reader::ok_ && !null )
             {
+#ifndef NOPRINT
               if( !null ) std::cout << v;
+#endif // NOPRINT
             }
             break;
           }
@@ -266,7 +328,9 @@ int main(int argc, char ** argv)
             r = fdr.read_float((size_t)i, v, null);
             if( r == value_type_reader::ok_ && !null )
             {
+#ifndef NOPRINT
               if( !null ) std::cout << v;
+#endif // NOPRINT
             }
 
             break;
@@ -277,7 +341,9 @@ int main(int argc, char ** argv)
             r = fdr.read_bool((size_t)i, v, null);
             if( r == value_type_reader::ok_ && !null )
             {
+#ifndef NOPRINT
               if( !null ) std::cout << v;
+#endif // NOPRINT
             }
             break;
           }
@@ -289,7 +355,9 @@ int main(int argc, char ** argv)
             r = fdr.read_bytes((size_t)i, &ptr, len, null);
             if( r == value_type_reader::ok_ && !null && len && ptr )
             {
+#ifndef NOPRINT
               if( !null ) { ptr[len] = 0; std::cout << ptr; }
+#endif // NOPRINT
             }
             break;
           }
@@ -310,17 +378,24 @@ int main(int argc, char ** argv)
             r = fdr.read_string((size_t)i, &ptr, len, null);
             if( r == value_type_reader::ok_ && !null && len && ptr )
             {
+#ifndef NOPRINT
               if( !null ) { ptr[len] = 0; std::cout << ptr; }
+#endif // NOPRINT
             }
             break;
           }
         };
-        if( r == value_type_reader::ok_ )
-          std::cout << sep;
+        
+#ifndef NOPRINT
+        if( r == value_type_reader::ok_ ) std::cout << sep;
+#endif // NOPRINT
       }
-      if( r == value_type_reader::ok_ )
-        std::cout << "\n";
+#ifndef NOPRINT
+      if( r == value_type_reader::ok_ ) std::cout << "\n";
+#endif // NOPRINT
+      ++n_rows;
     }
+    LOG_TRACE("received" << V_(n_rows) << "from" << V_(data_source) << V_(table));
     
   }
   catch (const std::exception & e)
