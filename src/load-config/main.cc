@@ -39,9 +39,9 @@ int main(int argc, char ** argv)
     std::string file{argv[2]};
     std::string config_svc{argv[1]};
     
-    endpoint_client     ep_clnt(config_svc,  "save-configs");
-    log_record_client   log_clnt(ep_clnt, "diag-service");
-    config_client       cfg_clnt(ep_clnt, "config-service");
+    endpoint_client     ep_clnt(config_svc,  "load-config");
+    log_record_client   log_clnt(ep_clnt,    "diag-service");
+    config_client       cfg_clnt(ep_clnt,    "config-service");
     
     logger::log_sink::socket_sptr dummy_socket;
     logger::log_sink::sptr        sink_stderr;

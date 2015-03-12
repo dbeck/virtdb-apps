@@ -142,7 +142,13 @@
       'target_name':       'dump-table',
       'type':              'executable',
       'dependencies':      [ 'src/common/common.gyp:common', ],
-      'sources':           [ 'src/load-endpoint/main.cc', ],
+      'sources':           [ 'src/dump-table/main.cc', ],
+    },
+    {
+      'target_name':       'field-humanizer',
+      'type':              'executable',
+      'dependencies':      [ 'src/common/common.gyp:common', ],
+      'sources':           [ 'src/field-humanizer/main.cc', ],
     },
   ],
 }

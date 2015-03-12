@@ -40,8 +40,8 @@ int main(int argc, char ** argv)
     std::string path{argv[2]};
     
     endpoint_client     ep_clnt(config_svc,  "save-configs");
-    log_record_client   log_clnt(ep_clnt, "diag-service");
-    config_client       cfg_clnt(ep_clnt, "config-service");
+    log_record_client   log_clnt(ep_clnt,    "diag-service");
+    config_client       cfg_clnt(ep_clnt,    "config-service");
     
     logger::log_sink::socket_sptr dummy_socket;
     logger::log_sink::sptr        sink_stderr;

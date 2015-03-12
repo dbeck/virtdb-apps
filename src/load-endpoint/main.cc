@@ -40,7 +40,7 @@ int main(int argc, char ** argv)
     std::string file{argv[2]};
     
     endpoint_client     ep_clnt(config_svc,  "load-endpoint");
-    log_record_client   log_clnt(ep_clnt, "diag-service");
+    log_record_client   log_clnt(ep_clnt,    "diag-service");
     
     logger::log_sink::socket_sptr dummy_socket;
     logger::log_sink::sptr        sink_stderr;
