@@ -158,18 +158,6 @@ int main(int argc, char ** argv)
       }
       if( !schema.empty() )
         resend_query.set_schema(schema);
-
-#if LOG_TRACE_IS_ENABLED
-      {
-        std::ostringstream os;
-        for( auto const & c : cols )
-        {
-          auto fl = table_meta.fields(c);
-          os << c << ':' << fl.name() << ' ';
-        }
-        LOG_TRACE("doing resend" << V_(query.table()) << V_(os.str()) << M_(resend_query));
-      }
-#endif // LOG_TRACE_IS_ENABLED
       
       // send the query here
       if( !q_cli.send_request(resend_query) )
@@ -189,7 +177,7 @@ int main(int argc, char ** argv)
                     if( !column->has_name() ) return;
                     if( !column_map.count(column->name()) ) return;
                     coll->push(column->seqno(), column_map[column->name()], column);
-                    /* */
+                    /*
                     LOG_TRACE(V_(column->seqno()) <<
                               V_(column->name()) <<
                               V_(column_map[column->name()]) <<
@@ -198,7 +186,7 @@ int main(int argc, char ** argv)
                               V_(coll->n_process_succeed()) <<
                               V_(coll->n_queued()) <<
                               V_(coll->n_received()));
-                     /**/
+                     */
                   });
 
     feeder fdr{coll};
