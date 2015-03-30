@@ -101,6 +101,12 @@
       'sources':           [ 'src/save-configs/main.cc', ],
     },
     {
+      'target_name':       'save-config',
+      'type':              'executable',
+      'dependencies':      [ 'src/common/common.gyp:common', ],
+      'sources':           [ 'src/save-config/main.cc', ],
+    },
+    {
       'target_name':       'load-config',
       'type':              'executable',
       'dependencies':      [ 'src/common/common.gyp:common', ],
