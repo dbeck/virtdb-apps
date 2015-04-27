@@ -35,6 +35,10 @@ int main(int argc, char ** argv)
     
     server_context::sptr   ctx{new server_context};
     client_context::sptr   cctx{new client_context};
+    
+    ctx->service_name("config-service");
+    ctx->ip_discovery_timeout_ms(1);
+    
     endpoint_server        ep_srv(ctx, argv[1], "config-service");
     endpoint_client        ep_clnt(cctx, ep_srv.local_ep(), ep_srv.name());
     log_record_client      log_clnt(cctx, ep_clnt, "diag-service");

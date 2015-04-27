@@ -90,6 +90,9 @@ int main(int argc, char ** argv)
     
     server_context::sptr   ctx{new server_context};
     client_context::sptr   cctx{new client_context};
+    
+    ctx->service_name(service_name);
+    
     endpoint_client        ep_clnt(cctx, endpoint_address,  service_name);
     log_record_client      log_clnt(cctx, ep_clnt, "diag-service");
     config_client          cfg_clnt(cctx, ep_clnt, "config-service");
