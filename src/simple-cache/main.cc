@@ -88,9 +88,11 @@ int main(int argc, char ** argv)
     std::string endpoint_address{argv[1]};
     std::string service_name{argv[2]};
     
-    endpoint_client     ep_clnt(endpoint_address,  service_name);
-    log_record_client   log_clnt(ep_clnt, "diag-service");
-    config_client       cfg_clnt(ep_clnt, "config-service");
+    server_context::sptr   ctx{new server_context};
+    client_context::sptr   cctx{new client_context};
+    endpoint_client        ep_clnt(cctx, endpoint_address,  service_name);
+    log_record_client      log_clnt(cctx, ep_clnt, "diag-service");
+    config_client          cfg_clnt(cctx, ep_clnt, "config-service");
     
     log_clnt.wait_valid_push();
     cfg_clnt.wait_valid_sub();
@@ -98,8 +100,8 @@ int main(int argc, char ** argv)
 
     LOG_TRACE("connection to log and config services are initialized");
     
-    query_proxy     query_fwd(cfg_clnt);
-    meta_proxy      meta_fwd(cfg_clnt);
+    query_proxy     query_fwd(ctx, cctx, cfg_clnt);
+    meta_proxy      meta_fwd(ctx, cctx, cfg_clnt);
     column_proxy *  col_proxy_ptr = nullptr;
     db              cache;
     
@@ -255,7 +257,7 @@ int main(int argc, char ** argv)
       }
     };
     
-    column_proxy column_fwd(cfg_clnt, on_data_handler);
+    column_proxy column_fwd(ctx, cctx, cfg_clnt, on_data_handler);
     col_proxy_ptr = &column_fwd;
     
     std::mutex mtx;

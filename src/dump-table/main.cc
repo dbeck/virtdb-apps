@@ -55,8 +55,10 @@ int main(int argc, char ** argv)
     if( argc > 4 )
       schema = argv[4];
     
-    endpoint_client     ep_clnt(config_svc,  "dump-table");
-    log_record_client   log_clnt(ep_clnt,    "diag-service");
+    client_context::sptr cctx{new client_context};
+    
+    endpoint_client     ep_clnt(cctx, config_svc,  "dump-table");
+    log_record_client   log_clnt(cctx, ep_clnt,    "diag-service");
     
     log_sink::socket_sptr dummy_socket;
     log_sink::sptr        sink_stderr;
@@ -72,7 +74,7 @@ int main(int argc, char ** argv)
     
     LOG_INFO("diag client connected");
     
-    query_client q_cli(ep_clnt, data_source);
+    query_client q_cli(cctx, ep_clnt, data_source);
     
     if( !q_cli.wait_valid(10000) )
     {
@@ -80,7 +82,7 @@ int main(int argc, char ** argv)
       THROW_("cannot connect to query service");
     }
     
-    column_client col_cli(ep_clnt, data_source);
+    column_client col_cli(cctx, ep_clnt, data_source);
 
     if( !col_cli.wait_valid(10000) )
     {
@@ -88,7 +90,7 @@ int main(int argc, char ** argv)
       THROW_("cannot connect to column service");
     }
     
-    meta_data_client meta_cli(ep_clnt, data_source);
+    meta_data_client meta_cli(cctx, ep_clnt, data_source);
 
     if( !meta_cli.wait_valid(10000) )
     {

@@ -39,8 +39,9 @@ int main(int argc, char ** argv)
     std::string config_svc{argv[1]};
     std::string name{argv[2]};
     
-    endpoint_client     ep_clnt(config_svc,  "remove-endpoint");
-    log_record_client   log_clnt(ep_clnt,    "diag-service");
+    client_context::sptr   cctx{new client_context};
+    endpoint_client        ep_clnt(cctx, config_svc,  "remove-endpoint");
+    log_record_client      log_clnt(cctx, ep_clnt,    "diag-service");
     
     logger::log_sink::socket_sptr dummy_socket;
     logger::log_sink::sptr        sink_stderr;

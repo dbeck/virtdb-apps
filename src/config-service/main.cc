@@ -33,11 +33,13 @@ int main(int argc, char ** argv)
       THROW_("invalid number of arguments");
     }
     
-    endpoint_server     ep_srv(argv[1], "config-service");
-    endpoint_client     ep_clnt(ep_srv.local_ep(), ep_srv.name());
-    log_record_client   log_clnt(ep_clnt, "diag-service");
-    config_client       cfg_clnt(ep_clnt, "config-service");
-    config_server       cfg_srv(cfg_clnt, ep_srv);
+    server_context::sptr   ctx{new server_context};
+    client_context::sptr   cctx{new client_context};
+    endpoint_server        ep_srv(ctx, argv[1], "config-service");
+    endpoint_client        ep_clnt(cctx, ep_srv.local_ep(), ep_srv.name());
+    log_record_client      log_clnt(cctx, ep_clnt, "diag-service");
+    config_client          cfg_clnt(cctx, ep_clnt, "config-service");
+    config_server          cfg_srv(ctx, cfg_clnt, ep_srv);
     
     ep_srv.reload_from("/tmp");
     cfg_srv.reload_from("/tmp");

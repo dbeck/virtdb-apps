@@ -29,11 +29,12 @@ int main(int argc, char ** argv)
     {
       THROW_("invalid number of arguments");
     }
-    
-    endpoint_client     ep_clnt(argv[1], "diag-service");
-    log_record_client   log_clnt(ep_clnt, "diag-service");
-    config_client       cfg_clnt(ep_clnt, "config-service");
-    log_record_server   log_svr(cfg_clnt);
+    server_context::sptr  ctx{new server_context};
+    client_context::sptr  cctx{new client_context};
+    endpoint_client       ep_clnt(cctx, argv[1], "diag-service");
+    log_record_client     log_clnt(cctx, ep_clnt, "diag-service");
+    config_client         cfg_clnt(cctx, ep_clnt, "config-service");
+    log_record_server     log_svr(ctx, cfg_clnt);
     
     while( true )
     {
