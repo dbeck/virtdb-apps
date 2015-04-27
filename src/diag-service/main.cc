@@ -33,6 +33,7 @@ int main(int argc, char ** argv)
     client_context::sptr  cctx{new client_context};
     
     ctx->service_name("diag-service");
+    ctx->endpoint_svc_addr(argv[1]);
     
     endpoint_client       ep_clnt(cctx, argv[1], "diag-service");
     log_record_client     log_clnt(cctx, ep_clnt, "diag-service");
