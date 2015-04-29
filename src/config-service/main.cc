@@ -34,11 +34,15 @@ int main(int argc, char ** argv)
     }
     
     server_context::sptr   ctx{new server_context};
+    server_context::sptr   sctx{new server_context};
     client_context::sptr   cctx{new client_context};
     
     ctx->service_name("config-service");
     ctx->endpoint_svc_addr(argv[1]);
     ctx->ip_discovery_timeout_ms(1);
+
+    sctx->service_name("security-service");
+    sctx->endpoint_svc_addr(argv[1]);
     
     endpoint_server        ep_srv(ctx);
     endpoint_client        ep_clnt(cctx, ep_srv.local_ep(), ep_srv.name());
@@ -46,11 +50,18 @@ int main(int argc, char ** argv)
     config_client          cfg_clnt(cctx, ep_clnt, "config-service");
     
     for( auto const & ep : config_server::endpoint_hosts(ep_srv) )
+    {
       ctx->bind_also_to(ep);
+      sctx->bind_also_to(ep);
+    }
     
-    ctx->ip_discovery_timeout_ms(500);
+    ctx->ip_discovery_timeout_ms(2000);
+    sctx->ip_discovery_timeout_ms(2000);
     
-    config_server          cfg_srv(ctx, cfg_clnt);
+    config_server              cfg_srv(ctx, cfg_clnt);
+    srcsys_credential_server   scred_server(sctx, cfg_clnt);
+    cert_store_server          cert_store(sctx, cfg_clnt);
+    // no user manager registered here
     
     ep_srv.reload_from("/tmp");
     cfg_srv.reload_from("/tmp");
