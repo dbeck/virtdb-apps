@@ -40,11 +40,17 @@ int main(int argc, char ** argv)
     ctx->endpoint_svc_addr(argv[1]);
     ctx->ip_discovery_timeout_ms(1);
     
-    endpoint_server        ep_srv(ctx, argv[1], "config-service");
+    endpoint_server        ep_srv(ctx);
     endpoint_client        ep_clnt(cctx, ep_srv.local_ep(), ep_srv.name());
     log_record_client      log_clnt(cctx, ep_clnt, "diag-service");
     config_client          cfg_clnt(cctx, ep_clnt, "config-service");
-    config_server          cfg_srv(ctx, cfg_clnt, ep_srv);
+    
+    for( auto const & ep : config_server::endpoint_hosts(ep_srv) )
+      ctx->bind_also_to(ep);
+    
+    ctx->ip_discovery_timeout_ms(500);
+    
+    config_server          cfg_srv(ctx, cfg_clnt);
     
     ep_srv.reload_from("/tmp");
     cfg_srv.reload_from("/tmp");
