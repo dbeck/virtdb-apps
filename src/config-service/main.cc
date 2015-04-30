@@ -49,7 +49,7 @@ int main(int argc, char ** argv)
     log_record_client      log_clnt(cctx, ep_clnt, "diag-service");
     config_client          cfg_clnt(cctx, ep_clnt, "config-service");
     
-    for( auto const & ep : config_server::endpoint_hosts(ep_srv) )
+    for( auto const & ep : ep_srv.endpoint_hosts() )
     {
       ctx->bind_also_to(ep);
       sctx->bind_also_to(ep);
