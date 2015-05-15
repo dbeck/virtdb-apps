@@ -215,7 +215,9 @@ int main(int argc, char ** argv)
       THROW_("failed to send query");
     }
 
-    const char sep = 0x1;
+    const char * field_sep = "<<DIV>>";
+    const char * line_sep  = "<<EOL>>";
+    
     int n_columns = query.fields_size();
     std::vector<pb::Kind> kinds;
     for( auto const & fl : query.fields() )
@@ -223,7 +225,7 @@ int main(int argc, char ** argv)
       auto desc = fl.desc();
       pb::Kind k = desc.type();
       kinds.push_back(k);
-      std::cout << fl.name() << sep;
+      std::cout << fl.name() << field_sep;
     }
     
     size_t n_rows = 0;
@@ -377,11 +379,11 @@ int main(int argc, char ** argv)
         };
         
 #ifndef NOPRINT
-        if( r == value_type_reader::ok_ ) std::cout << sep;
+        if( r == value_type_reader::ok_ ) std::cout << field_sep;
 #endif // NOPRINT
       }
 #ifndef NOPRINT
-      if( r == value_type_reader::ok_ ) std::cout << "\n";
+      if( r == value_type_reader::ok_ ) std::cout << line_sep << "\n";
 #endif // NOPRINT
       ++n_rows;
     }
