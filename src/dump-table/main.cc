@@ -192,6 +192,7 @@ int main(int argc, char ** argv)
                   });
 
     feeder fdr{coll};
+    fdr.next_block_timeout_ms(120000);
     
     // prepare and send query. the data receivers are all set now, need to setup the query
     {
@@ -229,7 +230,7 @@ int main(int argc, char ** argv)
     }
     
     size_t n_rows = 0;
-    std::cout << "\n";
+    std::cout << line_sep << "\n";
     
     while( true )
     {
