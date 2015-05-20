@@ -86,3 +86,6 @@ gyp-mac-tool
 
 # buid generated
 src/greenplum-config/build-result
+
+# log files
+diag.log
