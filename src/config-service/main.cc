@@ -47,6 +47,9 @@ int main(int argc, char ** argv)
     sctx->endpoint_svc_addr(argv[1]);
     
     endpoint_server        ep_srv(ctx);
+    // load existing data early
+    ep_srv.reload_from("/tmp");
+
     endpoint_client        ep_clnt(cctx, ep_srv.local_ep(), ep_srv.name());
     log_record_client      log_clnt(cctx, ep_clnt, "diag-service");
     config_client          cfg_clnt(cctx, ep_clnt, "config-service");
@@ -61,12 +64,13 @@ int main(int argc, char ** argv)
     sctx->ip_discovery_timeout_ms(2000);
     
     config_server              cfg_srv(ctx, cfg_clnt);
+    // load existing data early
+    cfg_srv.reload_from("/tmp");
+    
     srcsys_credential_server   scred_server(sctx, cfg_clnt);
     cert_store_server          cert_store(sctx, cfg_clnt);
     // no user manager registered here
     
-    ep_srv.reload_from("/tmp");
-    cfg_srv.reload_from("/tmp");
     
     while( true )
     {
@@ -74,6 +78,7 @@ int main(int argc, char ** argv)
       ep_srv.save_to("/tmp");
       cfg_srv.save_to("/tmp");
       ctx->keep_alive(ep_clnt);
+      sctx->keep_alive(ep_clnt);
       LOG_TRACE("alive");
     }
   }
