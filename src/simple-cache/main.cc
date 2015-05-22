@@ -714,11 +714,9 @@ int main(int argc, char ** argv)
     
     while( true )
     {
-      std::this_thread::sleep_for(std::chrono::seconds(60));
-      {
-        std::unique_lock<std::mutex> l(mtx);
-        LOG_TRACE("alive");
-      }
+      std::this_thread::sleep_for(std::chrono::milliseconds(DEFAULT_ENDPOINT_EXPIRY_MS/3));
+      ctx->keep_alive(ep_clnt);
+      LOG_TRACE("alive");
     }
 
   }

@@ -76,6 +76,8 @@ int main(int argc, char ** argv)
       pb::EndpointData ep;
       ep.set_name("save-configs");
       ep.set_svctype(pb::ServiceType::NONE);
+      ep.set_validforms(100);
+      ep.set_cmd(pb::EndpointData::LIST);
       
       auto process_endpoint = [&](const pb::EndpointData & ep) {
         services.insert(ep.name());

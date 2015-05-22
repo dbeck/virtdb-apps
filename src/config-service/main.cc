@@ -1,9 +1,11 @@
 
 #include <logger.hh>
+#include <util/constants.hh>
 #include <connector.hh>
 #include <iostream>
 
 using namespace virtdb::connector;
+using namespace virtdb::util;
 
 namespace
 {
@@ -68,9 +70,10 @@ int main(int argc, char ** argv)
     
     while( true )
     {
-      std::this_thread::sleep_for(std::chrono::seconds(60));
+      std::this_thread::sleep_for(std::chrono::milliseconds(DEFAULT_ENDPOINT_EXPIRY_MS/3));
       ep_srv.save_to("/tmp");
       cfg_srv.save_to("/tmp");
+      ctx->keep_alive(ep_clnt);
       LOG_TRACE("alive");
     }
   }

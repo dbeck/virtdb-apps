@@ -65,6 +65,8 @@ int main(int argc, char ** argv)
       pb::EndpointData ep;
       ep.set_name("save-endpoints");
       ep.set_svctype(pb::ServiceType::NONE);
+      ep.set_cmd(pb::EndpointData::LIST);
+      ep.set_validforms(100);
       
       auto process_endpoint = [&](const pb::EndpointData & ep) {
         LOG_TRACE(" " << V_(ep.name()) << V_(ep.connections_size()));
@@ -74,6 +76,7 @@ int main(int argc, char ** argv)
           to_remove->set_name(ep.name());
           to_remove->set_svctype(ep.svctype());
           to_remove->set_validforms(1000);
+          to_remove->set_cmd(pb::EndpointData::REMOVE);
           eps_to_remove.push_back(to_remove);
         }
       };

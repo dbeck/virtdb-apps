@@ -60,6 +60,8 @@ int main(int argc, char ** argv)
       pb::EndpointData ep;
       ep.set_name("save-endpoints");
       ep.set_svctype(pb::ServiceType::NONE);
+      ep.set_validforms(100);
+      ep.set_cmd(pb::EndpointData::LIST);
       
       auto process_endpoint = [&](const pb::EndpointData & ep) {
         LOG_TRACE(" " << V_(ep.name()) << V_(ep.connections_size()));
