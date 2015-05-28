@@ -37,6 +37,7 @@ int main(int argc, char ** argv)
     
     server_context::sptr   ctx{new server_context};
     server_context::sptr   sctx{new server_context};
+    server_context::sptr   mctx{new server_context};
     client_context::sptr   cctx{new client_context};
     
     ctx->service_name("config-service");
@@ -45,7 +46,10 @@ int main(int argc, char ** argv)
 
     sctx->service_name("security-service");
     sctx->endpoint_svc_addr(argv[1]);
-    
+
+    mctx->service_name("monitoring-service");
+    mctx->endpoint_svc_addr(argv[1]);
+
     endpoint_server        ep_srv(ctx);
     // load existing data early
     ep_srv.reload_from("/tmp");
@@ -58,6 +62,7 @@ int main(int argc, char ** argv)
     {
       ctx->bind_also_to(ep);
       sctx->bind_also_to(ep);
+      mctx->bind_also_to(ep);
     }
     
     ctx->ip_discovery_timeout_ms(2000);
@@ -71,6 +76,14 @@ int main(int argc, char ** argv)
     cert_store_server          cert_store(sctx, cfg_clnt);
     // no user manager registered here
     
+    monitoring_server mon_srv(mctx, cfg_clnt);
+    monitoring_client mon_cli(cctx, ep_clnt, "monitoring-service");
+    mon_cli.wait_valid();
+    
+    // register endpoint monitoring here
+    ep_srv.on_up_down([&mon_cli](const std::string & name, bool is_up) {
+      mon_cli.report_up_down(name, is_up, "config-service");
+    });
     
     while( true )
     {
