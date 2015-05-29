@@ -92,6 +92,7 @@ int main(int argc, char ** argv)
       cfg_srv.save_to("/tmp");
       ctx->keep_alive(ep_clnt);
       sctx->keep_alive(ep_clnt);
+      mctx->keep_alive(ep_clnt);
       LOG_TRACE("alive");
     }
   }
