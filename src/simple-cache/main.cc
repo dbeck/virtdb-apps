@@ -6,6 +6,7 @@
 #include <connector/endpoint_client.hh>
 #include <connector/config_client.hh>
 #include <connector/log_record_client.hh>
+#include <connector/monitoring_client.hh>
 #include <dsproxy/query_proxy.hh>
 #include <dsproxy/column_proxy.hh>
 #include <dsproxy/meta_proxy.hh>
@@ -97,12 +98,18 @@ int main(int argc, char ** argv)
     endpoint_client        ep_clnt(cctx, endpoint_address,  service_name);
     log_record_client      log_clnt(cctx, ep_clnt, "diag-service");
     config_client          cfg_clnt(cctx, ep_clnt, "config-service");
+    monitoring_client      mon_clnt(cctx, ep_clnt, "monitoring-service");
     
     log_clnt.wait_valid_push();
     cfg_clnt.wait_valid_sub();
     cfg_clnt.wait_valid_req();
+    mon_clnt.wait_valid();
 
     LOG_TRACE("connection to log and config services are initialized");
+    
+    // cache start as NOT_INITIALIZED by default
+    mon_clnt.report_state(service_name,
+                          pb::MonitoringRequest::SetState::NOT_INITIALIZED);
     
     query_proxy     query_fwd(ctx, cctx, cfg_clnt);
     meta_proxy      meta_fwd(ctx, cctx, cfg_clnt);
@@ -307,19 +314,38 @@ int main(int argc, char ** argv)
                                          "user_config/Data Provider/");
       if( !data_provider.empty() )
       {
+        bool is_ok = true;
+        
         LOG_TRACE("configure using" << V_(data_provider));
         if( query_fwd.reconnect(data_provider) )
         {
           LOG_INFO("query proxy connected to" << V_(data_provider));
         }
+        else is_ok = false;
+          
         if( meta_fwd.reconnect(data_provider) )
         {
           LOG_INFO("meta proxy connected to" << V_(data_provider));
         }
+        else is_ok = false;
+        
         if( column_fwd.reconnect(data_provider) )
         {
           LOG_INFO("column proxy connected to" << V_(data_provider));
         }
+        else is_ok = false;
+        
+        if( is_ok )
+        {
+          mon_clnt.report_state(service_name,
+                                pb::MonitoringRequest::SetState::CLEAR);
+        }
+        else
+        {
+          mon_clnt.report_state(service_name,
+                                pb::MonitoringRequest::SetState::NOT_INITIALIZED);
+        }
+
       }
       
       auto location = changed_param(old_parameters,
