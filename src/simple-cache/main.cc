@@ -741,8 +741,8 @@ int main(int argc, char ** argv)
     
     while( true )
     {
-      std::this_thread::sleep_for(std::chrono::milliseconds(DEFAULT_ENDPOINT_EXPIRY_MS/3));
       ctx->keep_alive(ep_clnt);
+      std::this_thread::sleep_for(std::chrono::milliseconds(DEFAULT_ENDPOINT_EXPIRY_MS/3));
     }
     
     monitoring_client::set_global_instance(monitoring_client::sptr());
