@@ -221,12 +221,14 @@ int main(int argc, char ** argv)
     
     int n_columns = query.fields_size();
     std::vector<pb::Kind> kinds;
-    for( auto const & fl : query.fields() )
+    for( int i = 0; i<query.fields_size(); ++i )
     {
+      auto fl = query.fields(i);
       auto desc = fl.desc();
       pb::Kind k = desc.type();
       kinds.push_back(k);
-      std::cout << fl.name() << field_sep;
+      std::cout << fl.name();
+      if( i!= query.fields_size()-1 ) std::cout << field_sep;
     }
     
     size_t n_rows = 0;
@@ -380,7 +382,7 @@ int main(int argc, char ** argv)
         };
         
 #ifndef NOPRINT
-        if( r == value_type_reader::ok_ ) std::cout << field_sep;
+        if( r == value_type_reader::ok_ && i != n_columns-1 ) std::cout << field_sep;
 #endif // NOPRINT
       }
 #ifndef NOPRINT

@@ -95,20 +95,21 @@ int main(int argc, char ** argv)
     ctx->service_name(service_name);
     ctx->endpoint_svc_addr(endpoint_address);
     
-    endpoint_client        ep_clnt(cctx, endpoint_address,  service_name);
-    log_record_client      log_clnt(cctx, ep_clnt, "diag-service");
-    config_client          cfg_clnt(cctx, ep_clnt, "config-service");
-    monitoring_client      mon_clnt(cctx, ep_clnt, "monitoring-service");
+    endpoint_client           ep_clnt(cctx, endpoint_address,  service_name);
+    log_record_client         log_clnt(cctx, ep_clnt, "diag-service");
+    config_client             cfg_clnt(cctx, ep_clnt, "config-service");
+    monitoring_client::sptr   mon_clnt{new monitoring_client(cctx, ep_clnt, "monitoring-service")};
+    monitoring_client::set_global_instance(mon_clnt);
     
     log_clnt.wait_valid_push();
     cfg_clnt.wait_valid_sub();
     cfg_clnt.wait_valid_req();
-    mon_clnt.wait_valid();
+    mon_clnt->wait_valid();
 
     LOG_TRACE("connection to log and config services are initialized");
     
     // cache start as NOT_INITIALIZED by default
-    mon_clnt.report_state(service_name,
+    mon_clnt->report_state(service_name,
                           pb::MonitoringRequest::SetState::NOT_INITIALIZED);
     
     query_proxy     query_fwd(ctx, cctx, cfg_clnt);
@@ -337,13 +338,13 @@ int main(int argc, char ** argv)
         
         if( is_ok )
         {
-          mon_clnt.report_state(service_name,
-                                pb::MonitoringRequest::SetState::CLEAR);
+          mon_clnt->report_state(service_name,
+                                 pb::MonitoringRequest::SetState::CLEAR);
         }
         else
         {
-          mon_clnt.report_state(service_name,
-                                pb::MonitoringRequest::SetState::NOT_INITIALIZED);
+          mon_clnt->report_state(service_name,
+                                 pb::MonitoringRequest::SetState::NOT_INITIALIZED);
         }
 
       }
@@ -742,9 +743,9 @@ int main(int argc, char ** argv)
     {
       std::this_thread::sleep_for(std::chrono::milliseconds(DEFAULT_ENDPOINT_EXPIRY_MS/3));
       ctx->keep_alive(ep_clnt);
-      LOG_TRACE("alive");
     }
-
+    
+    monitoring_client::set_global_instance(monitoring_client::sptr());
   }
   catch (const std::exception & e)
   {
