@@ -101,7 +101,18 @@ int main(int argc, char ** argv)
     monitoring_client::sptr   mon_clnt{new monitoring_client(cctx, ep_clnt, "monitoring-service")};
     monitoring_client::set_global_instance(mon_clnt);
     
-    log_clnt.wait_valid_push();
+    virtdb::logger::log_sink::socket_sptr dummy_socket;
+    virtdb::logger::log_sink::sptr        sink_stderr;
+    
+    if( log_clnt.wait_valid_push(virtdb::util::DEFAULT_TIMEOUT_MS) )
+    {
+      LOG_INFO("log connected");
+    }
+    else
+    {
+      sink_stderr.reset(new virtdb::logger::log_sink{dummy_socket});
+    }
+    
     cfg_clnt.wait_valid_sub();
     cfg_clnt.wait_valid_req();
     mon_clnt->wait_valid();
