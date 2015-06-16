@@ -170,8 +170,10 @@ int main(int argc, char ** argv)
                                const std::string & subscription,
                                std::shared_ptr<pb::Column> data)
     {
+      ctx->increase_stat("Column data from upstream server");
       if( !data )
       {
+        ctx->increase_stat("Invalid upstream column data");
         LOG_ERROR("invalid data received" <<
                   V_(provider_name) <<
                   V_(channel) <<
@@ -314,6 +316,8 @@ int main(int argc, char ** argv)
     auto reconfigure = [&](const pb::Config & cfg) {
       std::unique_lock<std::mutex> l(config_mtx);
       string_map old_parameters{config_parameters};
+      
+      ctx->increase_stat("New configuration arrived");
       
       for( auto const & cf : cfg.configdata() )
       {
@@ -544,6 +548,8 @@ int main(int argc, char ** argv)
     {
       if( q->has_querycontrol() )
       {
+        ctx->increase_stat("Not forwarding query with control command");
+
         // ignore special queries as they cannot be new
         return query_proxy::dont_forward;
       }
@@ -559,6 +565,7 @@ int main(int argc, char ** argv)
         // cached_data_sender.push(tmp_query);
         if( send_cached_data(tmp_query) )
         {
+          ctx->increase_stat("Valid cached data exists");
           return query_proxy::dont_forward;
         }
         else
@@ -579,6 +586,7 @@ int main(int argc, char ** argv)
                                std::set<uint64_t> & blocks)
     {
       bool ret = false;
+      ctx->increase_stat("Resend chunk called");
       
 #if LOG_TRACE_IS_ENABLED
       {
@@ -753,6 +761,7 @@ int main(int argc, char ** argv)
     while( true )
     {
       ctx->keep_alive(ep_clnt);
+      mon_clnt->send_statistics(ctx->service_name());
       std::this_thread::sleep_for(std::chrono::milliseconds(DEFAULT_ENDPOINT_EXPIRY_MS/3));
     }
     
