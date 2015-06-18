@@ -41,6 +41,7 @@
       'src/common/cppzmq/',
       'src/common/proto/',
       'src/common/deps_/proto/',
+      'src/common/deps_/fsm/src/',
       'install/include/node/',
       '/usr/local/include/',
       '/usr/include/',
