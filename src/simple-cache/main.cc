@@ -401,7 +401,7 @@ int main(int argc, char ** argv)
       size_t res = cache.fetch(qcb);
       if( res < 2 )
       {
-        LOG_ERROR("failed to fetch query_column_block" <<
+        LOG_TRACE("failed to fetch query_column_block" <<
                   V_(query_id) << V_(name) <<
                   V_(qcb.key()) <<
                   V_(res) << V_(seq_no));
