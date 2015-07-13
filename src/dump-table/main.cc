@@ -134,9 +134,13 @@ int main(int argc, char ** argv)
     std::map<std::string, size_t> column_map;
     
     size_t i=0;
+    std::vector<pb::Kind> kinds;
     for( auto const & fl : table_meta.fields() )
     {
       column_map[fl.name()] = i;
+      auto desc = fl.desc();
+      pb::Kind k = desc.type();
+      kinds.push_back(k);
       ++i;
     }
 
@@ -153,10 +157,7 @@ int main(int argc, char ** argv)
       resend_query.add_seqnos(block_id);
       for( auto const & c : cols )
       {
-        auto * f = resend_query.add_fields();
-        f->set_name(table_meta.fields(c).name());
-        auto * desc = f->mutable_desc();
-        desc->set_type(table_meta.fields(c).desc().type());
+        resend_query.add_fields(table_meta.fields(c).name());
       }
       if( !schema.empty() )
         resend_query.set_schema(schema);
@@ -200,10 +201,7 @@ int main(int argc, char ** argv)
       query.set_table(table);
       for( auto const fl : table_meta.fields() )
       {
-        auto * f = query.add_fields();
-        f->set_name(fl.name());
-        auto * desc = f->mutable_desc();
-        desc->set_type(fl.desc().type());
+        query.add_fields(fl.name());
       }
       if( !schema.empty() )
         query.set_schema(schema);
@@ -220,14 +218,10 @@ int main(int argc, char ** argv)
     const char * line_sep  = "<<EOL>>";
     
     int n_columns = query.fields_size();
-    std::vector<pb::Kind> kinds;
     for( int i = 0; i<query.fields_size(); ++i )
     {
       auto fl = query.fields(i);
-      auto desc = fl.desc();
-      pb::Kind k = desc.type();
-      kinds.push_back(k);
-      std::cout << fl.name();
+      std::cout << fl;
       if( i!= query.fields_size()-1 ) std::cout << field_sep;
     }
     
