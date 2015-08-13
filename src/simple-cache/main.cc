@@ -7,6 +7,7 @@
 #include <connector/config_client.hh>
 #include <connector/log_record_client.hh>
 #include <connector/monitoring_client.hh>
+
 #include <dsproxy/query_proxy.hh>
 #include <dsproxy/column_proxy.hh>
 #include <dsproxy/meta_proxy.hh>
@@ -98,7 +99,11 @@ int main(int argc, char ** argv)
     endpoint_client           ep_clnt(cctx, endpoint_address,  service_name);
     log_record_client         log_clnt(cctx, ep_clnt, "diag-service");
     config_client             cfg_clnt(cctx, ep_clnt, "config-service");
-    monitoring_client::sptr   mon_clnt{new monitoring_client(cctx, ep_clnt, "monitoring-service")};
+    
+    srcsys_credential_client::sptr  sscr_clnt{new srcsys_credential_client(cctx, ep_clnt, "security-service")};
+    user_manager_client::sptr       umgr_clnt{new user_manager_client(cctx, ep_clnt, "security-service")};
+    monitoring_client::sptr         mon_clnt{new monitoring_client(cctx, ep_clnt, "monitoring-service")};
+
     monitoring_client::set_global_instance(mon_clnt);
     
     virtdb::logger::log_sink::socket_sptr dummy_socket;
@@ -123,8 +128,8 @@ int main(int argc, char ** argv)
     mon_clnt->report_state(service_name,
                           pb::MonitoringRequest::SetState::NOT_INITIALIZED);
     
-    query_proxy     query_fwd(ctx, cctx, cfg_clnt);
-    meta_proxy      meta_fwd(ctx, cctx, cfg_clnt);
+    query_proxy     query_fwd(ctx, cctx, cfg_clnt, umgr_clnt, sscr_clnt);
+    meta_proxy      meta_fwd(ctx, cctx, cfg_clnt, umgr_clnt, sscr_clnt);
     column_proxy *  col_proxy_ptr = nullptr;
     db              cache;
     
