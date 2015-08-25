@@ -34,7 +34,7 @@
           'OTHER_LDFLAGS': [ '-O3', ],
         },
       },
-    },
+    }, 
     'include_dirs': [
       'src/',
       'src/common/',
