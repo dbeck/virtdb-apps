@@ -111,7 +111,7 @@ int main(int argc, char ** argv)
     
     if( log_clnt.wait_valid_push(virtdb::util::DEFAULT_TIMEOUT_MS) )
     {
-      LOG_INFO("log connected");
+      LOG_TRACE("log connected");
     }
     else
     {
@@ -340,19 +340,19 @@ int main(int argc, char ** argv)
         LOG_TRACE("configure using" << V_(data_provider));
         if( query_fwd.reconnect(data_provider) )
         {
-          LOG_INFO("query proxy connected to" << V_(data_provider));
+          LOG_TRACE("query proxy connected to" << V_(data_provider));
         }
         else is_ok = false;
           
         if( meta_fwd.reconnect(data_provider) )
         {
-          LOG_INFO("meta proxy connected to" << V_(data_provider));
+          LOG_TRACE("meta proxy connected to" << V_(data_provider));
         }
         else is_ok = false;
         
         if( column_fwd.reconnect(data_provider) )
         {
-          LOG_INFO("column proxy connected to" << V_(data_provider));
+          LOG_TRACE("column proxy connected to" << V_(data_provider));
         }
         else is_ok = false;
         
@@ -534,7 +534,7 @@ int main(int argc, char ** argv)
       
       double ms = (0.0+rt.get_usec())/1000.0;
       
-      LOG_INFO("cache returned" <<
+      LOG_TRACE("cache returned" <<
                V_(query_id) <<
                V_(schema) <<
                V_(table) <<

@@ -189,7 +189,7 @@ namespace virtdb { namespace simple_cache {
       }        
     }
     
-    LOG_INFO(V_(qtl.clazz()) <<
+    LOG_TRACE(V_(qtl.clazz()) <<
              V_(qtl.key()) <<
              V_(query_->queryid()) <<
              V_(query_->filter_size()) <<
