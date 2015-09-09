@@ -765,7 +765,10 @@ int main(int argc, char ** argv)
     
     while( true )
     {
-      ctx->keep_alive(ep_clnt);
+      if( !ctx->keep_alive(ep_clnt) )
+      {
+        ep_clnt.reconnect();
+      }
       mon_clnt->send_statistics(ctx->service_name());
       std::this_thread::sleep_for(std::chrono::milliseconds(DEFAULT_ENDPOINT_EXPIRY_MS/3));
     }

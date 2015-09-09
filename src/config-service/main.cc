@@ -87,9 +87,12 @@ int main(int argc, char ** argv)
     
     while( true )
     {
-      ctx->keep_alive(ep_clnt);
-      sctx->keep_alive(ep_clnt);
-      mctx->keep_alive(ep_clnt);
+      if( !ctx->keep_alive(ep_clnt) ||
+          !sctx->keep_alive(ep_clnt) ||
+          !mctx->keep_alive(ep_clnt) )
+      {
+        ep_clnt.reconnect();
+      }
       std::this_thread::sleep_for(std::chrono::milliseconds(DEFAULT_ENDPOINT_EXPIRY_MS/3));
       ep_srv.save_to("/tmp");
       cfg_srv.save_to("/tmp");
