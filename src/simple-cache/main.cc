@@ -769,7 +769,7 @@ int main(int argc, char ** argv)
       {
         ep_clnt.reconnect();
       }
-      mon_clnt->send_statistics(ctx->service_name());
+      mon_clnt->send_statistics(service_name);
       std::this_thread::sleep_for(std::chrono::milliseconds(DEFAULT_ENDPOINT_EXPIRY_MS/3));
     }
     
