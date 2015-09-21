@@ -767,6 +767,7 @@ int main(int argc, char ** argv)
     {
       if( !ctx->keep_alive(ep_clnt) )
       {
+        LOG_ERROR("reconnecting to endpoint service because of keep_alive failure");
         ep_clnt.reconnect();
       }
       mon_clnt->send_statistics(service_name);
