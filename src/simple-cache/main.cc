@@ -175,10 +175,21 @@ int main(int argc, char ** argv)
                                const std::string & subscription,
                                std::shared_ptr<pb::Column> data)
     {
+      // TODO !!! Check all string manipulation here !!!
       ctx->increase_stat("Column data from upstream server");
       if( !data )
       {
         ctx->increase_stat("Invalid upstream column data");
+        LOG_ERROR("invalid data received" <<
+                  V_(provider_name) <<
+                  V_(channel) <<
+                  V_(subscription));
+        return;
+      }
+      
+      if( !data->has_queryid() || data->queryid().size() == 0 )
+      {
+        ctx->increase_stat("Empty upstream query ID");
         LOG_ERROR("invalid data received" <<
                   V_(provider_name) <<
                   V_(channel) <<
