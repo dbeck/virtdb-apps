@@ -176,6 +176,16 @@ int main(int argc, char ** argv)
                                std::shared_ptr<pb::Column> data)
     {
       // TODO !!! Check all string manipulation here !!!
+      
+      if( provider_name.size() == 0 ||
+         channel.size() == 0 ||
+         subscription.size() == 0 )
+      {
+        ctx->increase_stat("Invalid subscription info arrived");
+        LOG_ERROR("invalid subscription info arrived");
+        return;
+      }
+
       ctx->increase_stat("Column data from upstream server");
       if( !data )
       {
