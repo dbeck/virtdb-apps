@@ -126,7 +126,7 @@ int main(int argc, char ** argv)
       }
       else
       {
-        LOG_ERROR("connected to config service SUB" << V_(i));
+        LOG_INFO("connected to config service SUB" << V_(i));
         break;
       }
     }
@@ -139,7 +139,7 @@ int main(int argc, char ** argv)
       }
       else
       {
-        LOG_ERROR("connected to config service REQ" << V_(i));
+        LOG_INFO("connected to config service REQ" << V_(i));
         break;
       }
     }
@@ -152,7 +152,7 @@ int main(int argc, char ** argv)
       }
       else
       {
-        LOG_ERROR("connected to monitoring service" << V_(i));
+        LOG_INFO("connected to monitoring service" << V_(i));
         break;
       }
     }
