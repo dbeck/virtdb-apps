@@ -117,12 +117,45 @@ int main(int argc, char ** argv)
     {
       sink_stderr.reset(new virtdb::logger::log_sink{dummy_socket});
     }
-    
-    cfg_clnt.wait_valid_sub();
-    cfg_clnt.wait_valid_req();
-    mon_clnt->wait_valid();
 
-    LOG_TRACE("connection to log and config services are initialized");
+    for( int i=0; i<10; ++i )
+    {
+      if( !cfg_clnt.wait_valid_sub(virtdb::util::DEFAULT_TIMEOUT_MS) )
+      {
+        LOG_ERROR("failed to connect to config service SUB" << V_(i));
+      }
+      else
+      {
+        LOG_ERROR("connected to config service SUB" << V_(i));
+        break;
+      }
+    }
+    
+    for( int i=0; i<10; ++i )
+    {
+      if( !cfg_clnt.wait_valid_req(virtdb::util::DEFAULT_TIMEOUT_MS) )
+      {
+        LOG_ERROR("failed to connect to config service REQ" << V_(i));
+      }
+      else
+      {
+        LOG_ERROR("connected to config service REQ" << V_(i));
+        break;
+      }
+    }
+    
+    for( int i=0; i<10; ++i )
+    {
+      if( !mon_clnt->wait_valid(virtdb::util::DEFAULT_TIMEOUT_MS) )
+      {
+        LOG_ERROR("failed to connect to monitoring service" << V_(i));
+      }
+      else
+      {
+        LOG_ERROR("connected to monitoring service" << V_(i));
+        break;
+      }
+    }
     
     // cache start as NOT_INITIALIZED by default
     mon_clnt->report_state(service_name,
