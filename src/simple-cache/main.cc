@@ -68,7 +68,7 @@ namespace
         result[new_prefix] = value.stringvalue(0);
       }
     }
-    for( auto const & c : cfg.children() )
+    for( auto c : cfg.children() )
     {
       convert_config(new_prefix, c, result);
     }
@@ -263,7 +263,7 @@ int main(int argc, char ** argv)
                   );
         
         std::ostringstream os;
-        os << "failed to store column data for {" << data->queryid() << '/' << data->name() << ':' << data->seqno() << "}";
+        os << "failed to store column data for {" << data->queryid() << "/" << data->name() << ":" << data->seqno() << "}";
         qdata->error_info(os.str());
         return;
       }
@@ -291,7 +291,7 @@ int main(int argc, char ** argv)
                                     qcb) == false )
       {
         std::ostringstream os;
-        os << "failed to store query_column_block data for {" << data->queryid() << '/' << data->name() << ':' << data->seqno() << "}";
+        os << "failed to store query_column_block data for {" << data->queryid() << "/" << data->name() << ":" << data->seqno() << "}";
         qdata->error_info(os.str());
         LOG_ERROR(V_(os.str()));
         return;
@@ -304,7 +304,7 @@ int main(int argc, char ** argv)
                                     qtb) == false )
       {
         std::ostringstream os;
-        os << "failed to update query_table_block data for {" << data->queryid() << '/' << data->name() << ':' << data->seqno() << "}";
+        os << "failed to update query_table_block data for {" << data->queryid() << "/" << data->name() << ":" << data->seqno() << "}";
         qdata->error_info(os.str());
         LOG_ERROR(V_(os.str()));
         return;
@@ -329,7 +329,7 @@ int main(int argc, char ** argv)
         if( qdata->update_table_log(cache, qtl) == false)
         {
           std::ostringstream os;
-          os << "failed to update query_table_log data for {" << data->queryid() << '/' << data->name() << ':' << data->seqno() << "}";
+          os << "failed to update query_table_log data for {" << data->queryid() << "/" << data->name() << ":" << data->seqno() << "}";
           qdata->error_info(os.str());
           return;
         }
@@ -378,7 +378,7 @@ int main(int argc, char ** argv)
       
       ctx->increase_stat("New configuration arrived");
       
-      for( auto const & cf : cfg.configdata() )
+      for( auto cf : cfg.configdata() )
       {
         convert_config("",
                        cf,
@@ -557,7 +557,7 @@ int main(int argc, char ** argv)
       for( size_t bn=0; bn<qtl.t0_nblocks(); ++bn )
       {
         
-        for( auto const & ch : col_hashes )
+        for( auto ch : col_hashes )
         {
           size_t len = 0;
           auto data = fetch_column(ch.second,
@@ -650,14 +650,14 @@ int main(int argc, char ** argv)
 #if LOG_TRACE_IS_ENABLED
       {
         std::ostringstream resend;
-        for( auto const & c : columns )
+        for( std::string c : columns )
         {
-          resend << c << '[';
-          for( auto const & b : blocks )
+          resend << c << "[";
+          for( uint64_t b : blocks )
           {
-            resend << b << ' ';
+            resend << b << " ";
           }
-          resend << ']';
+          resend << "]";
         }
         LOG_TRACE("resending" << V_(query_id) << V_(resend.str()));
       }
@@ -678,10 +678,10 @@ int main(int argc, char ** argv)
       
       auto const & col_hashes = qdata->col_hashes();
       
-      for( auto const & c : columns )
+      for( std::string c : columns )
       {
-        auto const & col_hash = col_hashes.find(c);
-        for( auto const & b : blocks )
+        auto col_hash = col_hashes.find(c);
+        for( uint64_t b : blocks )
         {
           size_t len = 0;
           auto data = fetch_column(col_hash->second,
@@ -747,9 +747,9 @@ int main(int argc, char ** argv)
                               {
                                 reconfigure(cfg);
                                 std::set<std::string> strs;
-                                for( auto const & c : cfg_req.configdata() )
+                                for( auto c : cfg_req.configdata() )
                                   strs.insert( c.key() );
-                                for( auto const & c : cfg.configdata() )
+                                for( auto c : cfg.configdata() )
                                 {
                                   if( strs.count(c.key()) == 0 )
                                     cfg_req.add_configdata()->MergeFrom(c);
@@ -759,7 +759,7 @@ int main(int argc, char ** argv)
       }
       
       bool send_template = true;
-      for( auto const & c : cfg_req.configdata() )
+      for( auto c : cfg_req.configdata() )
         if( c.key() == "" && c.children_size() > 0 )
           send_template = false;
       
@@ -789,7 +789,7 @@ int main(int argc, char ** argv)
           "Expiry",
         };
         
-        for( auto const & v : requested_config_values )
+        for( auto v : requested_config_values )
         {
           auto child = cfg_data->add_children();
           child->set_key(v);
